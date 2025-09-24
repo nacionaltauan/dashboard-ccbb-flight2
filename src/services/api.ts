@@ -97,7 +97,7 @@ export const fetchResumoData = async () => {
 export const fetchEstrategiaOnlineData = async () => {
   try {
     const response = await apiNacional.get(
-      "/google/sheets/1eyj0PSNlZvvxnj9H0G0LM_jn2Ry4pSHACH2WwP7xUWw/data?range=Resumo",
+      "/google/sheets/1tdFuCDyh1RDvhv9EGoZVJTBiHLSSOk-uUjp5rSbMUgg/data?range=Resumo",
     )
     return response.data
   } catch (error) {
@@ -906,7 +906,7 @@ export const useBenchmarkData = () => {
 export const fetchConsolidadoNacionalData = async () => {
   try {
     const response = await apiNacional.get(
-      "/google/sheets/1eyj0PSNlZvvxnj9H0G0LM_jn2Ry4pSHACH2WwP7xUWw/data?range=Consolidado",
+      "/google/sheets/1tdFuCDyh1RDvhv9EGoZVJTBiHLSSOk-uUjp5rSbMUgg/data?range=Consolidado",
     )
     return response.data
   } catch (error) {
@@ -918,7 +918,7 @@ export const fetchConsolidadoNacionalData = async () => {
 export const fetchTikTokNacionalData = async () => {
   try {
     const response = await apiNacional.get(
-      "/google/sheets/1eyj0PSNlZvvxnj9H0G0LM_jn2Ry4pSHACH2WwP7xUWw/data?range=TikTok",
+      "/google/sheets/1tdFuCDyh1RDvhv9EGoZVJTBiHLSSOk-uUjp5rSbMUgg/data?range=TikTok",
     )
     return response.data
   } catch (error) {
@@ -930,7 +930,7 @@ export const fetchTikTokNacionalData = async () => {
 export const fetchPinterestNacionalData = async () => {
   try {
     const response = await apiNacional.get(
-      "/google/sheets/1eyj0PSNlZvvxnj9H0G0LM_jn2Ry4pSHACH2WwP7xUWw/data?range=Pinterest",
+      "/google/sheets/1tdFuCDyh1RDvhv9EGoZVJTBiHLSSOk-uUjp5rSbMUgg/data?range=Pinterest",
     )
     return response.data
   } catch (error) {
@@ -1019,7 +1019,7 @@ export const usePinterestNacionalData = () => {
 export const fetchMetaTratadoData = async () => {
   try {
     const response = await apiNacional.get(
-      "/google/sheets/1eyj0PSNlZvvxnj9H0G0LM_jn2Ry4pSHACH2WwP7xUWw/data?range=Meta%20-%20Tratado",
+      "/google/sheets/1tdFuCDyh1RDvhv9EGoZVJTBiHLSSOk-uUjp5rSbMUgg/data?range=Meta%20-%20Tratado",
     )
     return response.data
   } catch (error) {
@@ -1059,7 +1059,7 @@ export const useMetaTratadoData = () => {
 export const fetchGA4SourceNacionalData = async () => {
   try {
     const response = await apiNacional.get(
-      "/google/sheets/11Er3KQ1uGFD7qFHFDDG9l4wIlcc2XYVSf0K6i8-jFRk/data?range=GA4%20-Source",
+      "/google/sheets/1HOXNr49g68lQQo4fnh5nUi3mTynUionTq7t5m-u52m0/data?range=GA4%20-Source",
     )
     return response.data
   } catch (error) {
@@ -1071,7 +1071,7 @@ export const fetchGA4SourceNacionalData = async () => {
 export const fetchGA4CompletoNacionalData = async () => {
   try {
     const response = await apiNacional.get(
-      "/google/sheets/11Er3KQ1uGFD7qFHFDDG9l4wIlcc2XYVSf0K6i8-jFRk/data?range=GA4%20-%20Completo",
+      "/google/sheets/1HOXNr49g68lQQo4fnh5nUi3mTynUionTq7t5m-u52m0/data?range=GA4%20-%20Completo",
     )
     return response.data
   } catch (error) {
@@ -1083,7 +1083,7 @@ export const fetchGA4CompletoNacionalData = async () => {
 export const fetchGA4ResumoNacionalData = async () => {
   try {
     const response = await apiNacional.get(
-      "/google/sheets/11Er3KQ1uGFD7qFHFDDG9l4wIlcc2XYVSf0K6i8-jFRk/data?range=GA4%20-Resumo",
+      "/google/sheets/1HOXNr49g68lQQo4fnh5nUi3mTynUionTq7t5m-u52m0/data?range=GA4%20-Resumo",
     )
     return response.data
   } catch (error) {
@@ -1172,7 +1172,7 @@ export const useGA4ResumoNacionalData = () => {
 export const fetchEventosReceptivosData = async () => {
   try {
     const response = await apiNacional.get(
-      "/google/sheets/11Er3KQ1uGFD7qFHFDDG9l4wIlcc2XYVSf0K6i8-jFRk/data?range=Eventos%20receptivo",
+      "/google/sheets/1HOXNr49g68lQQo4fnh5nUi3mTynUionTq7t5m-u52m0/data?range=Eventos%20receptivo",
     )
     return response.data
   } catch (error) {
