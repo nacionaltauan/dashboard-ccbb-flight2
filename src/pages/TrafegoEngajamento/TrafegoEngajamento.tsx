@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useState, useMemo, useRef } from "react"
-import { TrendingUp, Calendar, Users, BarChart3, MessageCircle, Phone, HandHeart, QrCode, UserX } from "lucide-react"
+import { TrendingUp, Calendar, Users, BarChart3, MessageCircle, HandHeart } from "lucide-react"
 import Loading from "../../components/Loading/Loading"
 import PDFDownloadButton from "../../components/PDFDownloadButton/PDFDownloadButton"
 import { 
@@ -185,8 +185,8 @@ const TrafegoEngajamento: React.FC<TrafegoEngajamentoProps> = () => {
   const processedEventosData = useMemo(() => {
   if (!eventosReceptivosData?.data?.values || eventosReceptivosData.data.values.length <= 1) {
     return {
-      whatsappCliques: 0,
-      contrateAgoraCliques: 0,
+      bbTrack: 0,
+      firstVisit: 0,
       totalCTAs: 0,
     }
   }
@@ -199,8 +199,8 @@ const TrafegoEngajamento: React.FC<TrafegoEngajamentoProps> = () => {
   const eventNameIndex = headers.indexOf("Event name") 
   const eventCountIndex = headers.indexOf("Event count")
 
-  let whatsappTotal = 0
-  let contrateAgoraTotal = 0
+  let bbTrackTotal = 0
+  let firstVisitTotal = 0
 
   rows.forEach((row: any[]) => {
     const date = row[dateIndex] || ""
@@ -215,16 +215,16 @@ const TrafegoEngajamento: React.FC<TrafegoEngajamentoProps> = () => {
 
     // Mapear eventos para categorias
     if (eventName === "bbTrack") {
-      whatsappTotal += eventCount
-    } else if (eventName === "First Visit") {
-      contrateAgoraTotal += eventCount
+      bbTrackTotal += eventCount
+    } else if (eventName === "first_visit") {
+      firstVisitTotal += eventCount
     }
   })
 
   return {
-    whatsappCliques: whatsappTotal,
-    contrateAgoraCliques: contrateAgoraTotal, 
-    totalCTAs: whatsappTotal + contrateAgoraTotal,
+    bbTrack: bbTrackTotal,
+    firstVisit: firstVisitTotal,
+    totalCTAs: bbTrackTotal + firstVisitTotal,
   }
 }, [eventosReceptivosData, dateRange])
 
@@ -543,7 +543,7 @@ const TrafegoEngajamento: React.FC<TrafegoEngajamentoProps> = () => {
                 <div>
                   <p className="text-xs font-medium text-blue-600">bbTrack</p>
                   <p className="text-lg font-bold text-blue-900">
-                    {formatNumber(processedEventosData.whatsappCliques)}
+                    {formatNumber(processedEventosData.bbTrack)}
                   </p>
                 </div>
                 <MessageCircle className="w-6 h-6 text-blue-600" />
@@ -555,13 +555,12 @@ const TrafegoEngajamento: React.FC<TrafegoEngajamentoProps> = () => {
                 <div>
                   <p className="text-xs font-medium text-orange-600">First Visit</p>
                   <p className="text-lg font-bold text-orange-900">
-                    {formatNumber(processedEventosData.contrateAgoraCliques)}
+                    {formatNumber(processedEventosData.firstVisit)}
                   </p>
                 </div>
                 <HandHeart className="w-6 h-6 text-orange-600" />
               </div>
             </div>
-
 
             <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-lg p-3">
               <div className="flex items-center justify-between">
@@ -574,9 +573,6 @@ const TrafegoEngajamento: React.FC<TrafegoEngajamentoProps> = () => {
                 <BarChart3 className="w-6 h-6 text-yellow-600" />
               </div>
             </div>
-
-
-
           </div>
         </div>
 
@@ -675,7 +671,7 @@ const TrafegoEngajamento: React.FC<TrafegoEngajamentoProps> = () => {
       {/* GRID CONTAINER PARA OS 2 CARDS */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         
-        {/* CARD WHATSAPP */}
+        {/* CARD BBTRACK */}
         <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center">
@@ -683,18 +679,18 @@ const TrafegoEngajamento: React.FC<TrafegoEngajamentoProps> = () => {
               <span className="text-sm font-medium text-blue-700">bbTrack</span>
             </div>
             <span className="text-2xl font-bold text-blue-900">
-              {formatNumber(processedEventosData.whatsappCliques)}
+              {formatNumber(processedEventosData.bbTrack)}
             </span>
           </div>
           <p className="text-xs text-blue-600">
             {processedResumoData.receptivo.sessoesCampanha > 0 
-              ? `${((processedEventosData.whatsappCliques / processedResumoData.receptivo.sessoesCampanha) * 100).toFixed(2)}% das sessões`
+              ? `${((processedEventosData.bbTrack / processedResumoData.receptivo.sessoesCampanha) * 100).toFixed(2)}% das sessões`
               : '0% das sessões'
             }
           </p>
         </div>
 
-        {/* CARD CONTRATE AGORA */}
+        {/* CARD FIRST VISIT */}
         <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-4 border border-orange-200">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center">
@@ -702,17 +698,16 @@ const TrafegoEngajamento: React.FC<TrafegoEngajamentoProps> = () => {
               <span className="text-sm font-medium text-orange-700">First Visit</span>
             </div>
             <span className="text-2xl font-bold text-orange-900">
-              {formatNumber(processedEventosData.contrateAgoraCliques)}
+              {formatNumber(processedEventosData.firstVisit)}
             </span>
           </div>
           <p className="text-xs text-orange-600">
             {processedResumoData.receptivo.sessoesCampanha > 0 
-              ? `${((processedEventosData.contrateAgoraCliques / processedResumoData.receptivo.sessoesCampanha) * 100).toFixed(2)}% das sessões`
+              ? `${((processedEventosData.firstVisit / processedResumoData.receptivo.sessoesCampanha) * 100).toFixed(2)}% das sessões`
               : '0% das sessões'
             }
           </p>
         </div>
-
       </div>
 
 
@@ -733,21 +728,6 @@ const TrafegoEngajamento: React.FC<TrafegoEngajamentoProps> = () => {
                   : '0% taxa de conversão'
                 }
               </p>
-            </div>
-          </div>
-        </div>
-
-                {/* Total de CTAs */}
-        <div className="mt-4 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-4 border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <TrendingUp className="w-5 h-5 text-gray-600 mr-2" />
-              <span className="text-sm font-medium text-gray-700">Total de Eventos clicáveis</span>
-            </div>
-            <div className="text-right">
-              <span className="text-3xl font-bold text-gray-900">
-                {formatNumber(8734)}
-              </span>
             </div>
           </div>
         </div>
