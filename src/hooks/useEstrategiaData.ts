@@ -13,7 +13,7 @@ export function useEstrategiaData() {
     const fetchData = async () => {
       try {
         const response = await fetch(
-          "https://nacional-api-gray.vercel.app/google/sheets/1eyj0PSNlZvvxnj9H0G0LM_jn2Ry4pSHACH2WwP7xUWw/data?range=Resumo!A1:E1000",
+          "https://nacional-api-gray.vercel.app/google/sheets/1tdFuCDyh1RDvhv9EGoZVJTBiHLSSOk-uUjp5rSbMUgg/data?range=Resumo!A1:E1000",
         )
         const data: ResumoResponse = await response.json()
 

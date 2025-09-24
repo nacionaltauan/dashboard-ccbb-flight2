@@ -287,7 +287,7 @@ const CriativosTikTok: React.FC = () => {
         <p className="text-red-600">Erro ao carregar dados: {error.message}</p>
         <p className="text-red-500 text-sm mt-2">
           Verifique se a API está funcionando corretamente:
-          https://nacional-api-gray.vercel.app/google/sheets/1eyj0PSNlZvvxnj9H0G0LM_jn2Ry4pSHACH2WwP7xUWw/data?range=TikTok
+          https://nacional-api-gray.vercel.app/google/sheets/1tdFuCDyh1RDvhv9EGoZVJTBiHLSSOk-uUjp5rSbMUgg/data?range=TikTok
         </p>
       </div>
     )
