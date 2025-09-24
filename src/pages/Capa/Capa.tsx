@@ -91,17 +91,6 @@ const navigationCards: NavigationCard[] = [
     color: "bg-pink-600",
   },
   {
-    title: "Criativos - Pinterest",
-    description: "Performance dos criativos na plataforma Pinterest",
-    path: "/criativos-pinterest",
-    icon: (
-      <svg className="w-5 h-5" xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="50" height="50" viewBox="0 0 50 50" fill="currentColor">
-        <path d="M 25 2 C 12.309295 2 2 12.309295 2 25 C 2 37.690705 12.309295 48 25 48 C 37.690705 48 48 37.690705 48 25 C 48 12.309295 37.690705 2 25 2 z M 25 4 C 36.609825 4 46 13.390175 46 25 C 46 36.609825 36.609825 46 25 46 C 22.876355 46 20.82771 45.682142 18.896484 45.097656 C 19.75673 43.659418 20.867347 41.60359 21.308594 39.90625 C 21.570728 38.899887 22.648438 34.794922 22.648438 34.794922 C 23.348841 36.132057 25.395277 37.263672 27.574219 37.263672 C 34.058123 37.263672 38.732422 31.300682 38.732422 23.890625 C 38.732422 16.78653 32.935409 11.472656 25.476562 11.472656 C 16.196831 11.472656 11.271484 17.700825 11.271484 24.482422 C 11.271484 27.636307 12.94892 31.562193 15.634766 32.8125 C 16.041611 33.001865 16.260073 32.919834 16.353516 32.525391 C 16.425459 32.226044 16.788267 30.766792 16.951172 30.087891 C 17.003269 29.871239 16.978043 29.68405 16.802734 29.470703 C 15.913793 28.392399 15.201172 26.4118 15.201172 24.564453 C 15.201172 19.822048 18.791452 15.232422 24.908203 15.232422 C 30.18976 15.232422 33.888672 18.832872 33.888672 23.980469 C 33.888672 29.796219 30.95207 33.826172 27.130859 33.826172 C 25.020554 33.826172 23.440361 32.080359 23.947266 29.939453 C 24.555054 27.38426 25.728516 24.626944 25.728516 22.78125 C 25.728516 21.130713 24.842754 19.753906 23.007812 19.753906 C 20.850369 19.753906 19.117188 21.984457 19.117188 24.974609 C 19.117187 26.877359 19.761719 28.166016 19.761719 28.166016 C 19.761719 28.166016 17.630543 37.176514 17.240234 38.853516 C 16.849091 40.52931 16.953851 42.786365 17.115234 44.466797 C 9.421139 41.352465 4 33.819328 4 25 C 4 13.390175 13.390175 4 25 4 z"></path>
-      </svg>
-    ),
-    color: "bg-red-400",
-  },
-  {
     title: "Glossário",
     description: "Entenda os termos técnicos e métricas do dashboard",
     path: "/glossario",
@@ -117,8 +106,8 @@ const Capa: React.FC = () => {
       <div className="relative overflow-hidden rounded-2xl shadow-2xl h-48">
         <div className="relative h-full bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600">
           <img
-            src="/images/banner-background.webp"
-            alt="Campanha BrasilSeg - Itens pessoais"
+            src="/images/banner-background-2.webp"
+            alt="Campanha CCBB - 2º Flight"
             className="w-full h-full object-cover [object-position:right_25%] relative"
           />
 
@@ -147,7 +136,7 @@ const Capa: React.FC = () => {
               <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
               <div>
                 <p className="font-semibold text-gray-900 text-sm">Campanha:</p>
-                <p className="text-gray-700 text-sm">BrasilSeg - Itens Pessoais</p>
+                <p className="text-gray-700 text-sm">CCBB - 2º Flight</p>
               </div>
             </div>
             
@@ -155,7 +144,7 @@ const Capa: React.FC = () => {
               <User className="w-3 h-3 text-purple-600 mt-1" />
               <div>
                 <p className="font-semibold text-gray-900 text-sm">Clientes:</p>
-                <p className="text-gray-700 text-sm">Andrea e Luciana</p>
+                <p className="text-gray-700 text-sm">A Definir</p>
               </div>
             </div>
           </div>
@@ -172,14 +161,14 @@ const Capa: React.FC = () => {
               <Users className="w-3 h-3 text-orange-600 mt-1" />
               <div>
                 <p className="font-semibold text-gray-900 text-sm">Público Alvo:</p>
-                <p className="text-gray-700 text-sm">AS ABC 25+</p>
+                <p className="text-gray-700 text-sm">A Definir</p>
               </div>
             </div>            
             <div className="flex items-start space-x-3">
               <BarChart3 className="w-3 h-3 text-blue-600 mt-1" />
               <div>
                 <p className="font-semibold text-gray-900 text-sm">Objetivo de Mídia:</p>
-                <p className="text-gray-700 text-sm">Alcance</p>
+                <p className="text-gray-700 text-sm">a Definir</p>
               </div>
             </div>
           </div>
