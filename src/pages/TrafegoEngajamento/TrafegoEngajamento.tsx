@@ -187,7 +187,6 @@ const TrafegoEngajamento: React.FC<TrafegoEngajamentoProps> = () => {
     return {
       whatsappCliques: 0,
       contrateAgoraCliques: 0,
-      faleConoscoCliques: 0,
       totalCTAs: 0,
     }
   }
@@ -202,7 +201,6 @@ const TrafegoEngajamento: React.FC<TrafegoEngajamentoProps> = () => {
 
   let whatsappTotal = 0
   let contrateAgoraTotal = 0
-  let faleConoscoTotal = 0
 
   rows.forEach((row: any[]) => {
     const date = row[dateIndex] || ""
@@ -216,20 +214,17 @@ const TrafegoEngajamento: React.FC<TrafegoEngajamentoProps> = () => {
     const eventCount = parseInt(row[eventCountIndex]) || 0
 
     // Mapear eventos para categorias
-    if (eventName === "clique_whatsapp_flutuante") {
+    if (eventName === "bbTrack") {
       whatsappTotal += eventCount
-    } else if (eventName === "clique_cta_contrate_agora" || eventName === "mobile_clique_cta_contrate_aqui") {
+    } else if (eventName === "First Visit") {
       contrateAgoraTotal += eventCount
-    } else if (eventName === "clique_cta_fale_com_a_gente") {
-      faleConoscoTotal += eventCount
     }
   })
 
   return {
     whatsappCliques: whatsappTotal,
     contrateAgoraCliques: contrateAgoraTotal, 
-    faleConoscoCliques: faleConoscoTotal,
-    totalCTAs: whatsappTotal + contrateAgoraTotal + faleConoscoTotal,
+    totalCTAs: whatsappTotal + contrateAgoraTotal,
   }
 }, [eventosReceptivosData, dateRange])
 
@@ -528,8 +523,8 @@ const TrafegoEngajamento: React.FC<TrafegoEngajamentoProps> = () => {
             </div>
           </div>
 
-          {/* Cards de Métricas - 6 cards ocupando 9 colunas */}
-          <div className="col-span-9 grid grid-cols-6 gap-3">
+          {/* Cards de Métricas - 4 cards ocupando 9 colunas */}
+          <div className="col-span-9 grid grid-cols-4 gap-3">
             <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-3">
               <div className="flex items-center justify-between">
                 <div>
@@ -546,7 +541,7 @@ const TrafegoEngajamento: React.FC<TrafegoEngajamentoProps> = () => {
             <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-medium text-blue-600">WhatsApp</p>
+                  <p className="text-xs font-medium text-blue-600">bbTrack</p>
                   <p className="text-lg font-bold text-blue-900">
                     {formatNumber(processedEventosData.whatsappCliques)}
                   </p>
@@ -558,7 +553,7 @@ const TrafegoEngajamento: React.FC<TrafegoEngajamentoProps> = () => {
             <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-medium text-orange-600">Contrate Agora</p>
+                  <p className="text-xs font-medium text-orange-600">First Visit</p>
                   <p className="text-lg font-bold text-orange-900">
                     {formatNumber(processedEventosData.contrateAgoraCliques)}
                   </p>
@@ -567,17 +562,6 @@ const TrafegoEngajamento: React.FC<TrafegoEngajamentoProps> = () => {
               </div>
             </div>
 
-            <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-medium text-purple-600">Fale Conosco</p>
-                  <p className="text-lg font-bold text-purple-900">
-                    {formatNumber(processedEventosData.faleConoscoCliques)}
-                  </p>
-                </div>
-                <Phone className="w-6 h-6 text-purple-600" />
-              </div>
-            </div>
 
             <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-lg p-3">
               <div className="flex items-center justify-between">
@@ -591,34 +575,6 @@ const TrafegoEngajamento: React.FC<TrafegoEngajamentoProps> = () => {
               </div>
             </div>
 
-           
-            <div className="bg-gradient-to-br from-cyan-50 to-cyan-100 rounded-lg p-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-medium text-cyan-600">Leituras de QR Code</p>
-                  {/*
-                    AQUI VOCÊ COLOCA O NÚMERO DE LEITURAS.
-                    Basta trocar o número 1500 pelo valor que você quiser.
-                  */}
-                  <p className="text-lg font-bold text-cyan-900">{formatNumber(16)}</p>
-                </div>
-                <QrCode className="w-6 h-6 text-cyan-600" />
-              </div>
-            </div>
-
-            <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-lg p-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-medium text-red-600">Não Sou Cliente BB</p>
-                  {/*
-                    AQUI VOCÊ COLOCA O NÚMERO DE LEITURAS.
-                    Basta trocar o número 1500 pelo valor que você quiser.
-                  */}
-                  <p className="text-lg font-bold text-red-900">{formatNumber(4)}</p>
-                </div>
-                <UserX className="w-6 h-6 text-red-600" />
-              </div>
-            </div>
 
 
           </div>
@@ -716,15 +672,15 @@ const TrafegoEngajamento: React.FC<TrafegoEngajamentoProps> = () => {
     <div className="card-overlay rounded-lg shadow-lg p-6">
       <h3 className="text-lg font-semibold text-gray-900 mb-4">Resumo de Conversões (CTAs)</h3>
       
-      {/* GRID CONTAINER PARA OS 3 CARDS */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* GRID CONTAINER PARA OS 2 CARDS */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         
         {/* CARD WHATSAPP */}
         <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center">
               <MessageCircle className="w-5 h-5 text-blue-600 mr-2" />
-              <span className="text-sm font-medium text-blue-700">WhatsApp</span>
+              <span className="text-sm font-medium text-blue-700">bbTrack</span>
             </div>
             <span className="text-2xl font-bold text-blue-900">
               {formatNumber(processedEventosData.whatsappCliques)}
@@ -743,7 +699,7 @@ const TrafegoEngajamento: React.FC<TrafegoEngajamentoProps> = () => {
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center">
               <HandHeart className="w-5 h-5 text-orange-600 mr-2" />
-              <span className="text-sm font-medium text-orange-700">Contrate Agora</span>
+              <span className="text-sm font-medium text-orange-700">First Visit</span>
             </div>
             <span className="text-2xl font-bold text-orange-900">
               {formatNumber(processedEventosData.contrateAgoraCliques)}
@@ -757,24 +713,6 @@ const TrafegoEngajamento: React.FC<TrafegoEngajamentoProps> = () => {
           </p>
         </div>
 
-        {/* CARD FALE CONOSCO */}
-        <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4 border border-purple-200">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center">
-              <Phone className="w-5 h-5 text-purple-600 mr-2" />
-              <span className="text-sm font-medium text-purple-700">Fale Conosco</span>
-            </div>
-            <span className="text-2xl font-bold text-purple-900">
-              {formatNumber(processedEventosData.faleConoscoCliques)}
-            </span>
-          </div>
-          <p className="text-xs text-purple-600">
-            {processedResumoData.receptivo.sessoesCampanha > 0 
-              ? `${((processedEventosData.faleConoscoCliques / processedResumoData.receptivo.sessoesCampanha) * 100).toFixed(2)}% das sessões`
-              : '0% das sessões'
-            }
-          </p>
-        </div>
       </div>
 
 
@@ -826,7 +764,7 @@ const TrafegoEngajamento: React.FC<TrafegoEngajamentoProps> = () => {
           os gráficos e métricas refletem apenas os dados do período escolhido.
         </p>
         <p className="text-xs text-gray-500 mt-1">
-          <strong>Novos CTAs:</strong> WhatsApp Flutuante, Contrate Agora e Fale com a Gente são as principais conversões monitoradas.
+          <strong>Novos CTAs:</strong> bbTrack e First Visit são as principais conversões monitoradas.
         </p>
       </div>
     </div>
