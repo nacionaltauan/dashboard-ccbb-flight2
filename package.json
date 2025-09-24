@@ -1,7 +1,8 @@
 {
-  "name": "dashboard-itens-pessoais",
+  "name": "dashboard-ccbb-flight2",
   "version": "0.1.0",
   "private": true,
+  "description": "Dashboard CCBB Flight2 - Baseado no dashboard-itens-pessoais",
   "dependencies": {
     "@nivo/core": "^0.99.0",
     "@nivo/line": "^0.99.0",
