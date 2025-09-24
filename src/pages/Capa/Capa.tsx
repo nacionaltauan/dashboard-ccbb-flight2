@@ -106,7 +106,7 @@ const Capa: React.FC = () => {
       <div className="relative overflow-hidden rounded-2xl shadow-2xl h-48">
         <div className="relative h-full bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600">
           <img
-            src="/images/banner-background-2.webp"
+            src="/images/Card_Banner_CCBB.png"
             alt="Campanha CCBB - 2º Flight"
             className="w-full h-full object-cover [object-position:right_25%] relative"
           />
