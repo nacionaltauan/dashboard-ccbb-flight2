@@ -172,9 +172,9 @@ const CriativosMeta: FC = () => {
       const pracaSet = new Set<string>()
       processed.forEach((item) => {
         if (item.campaignName) {
-          const match = item.campaignName.match(/(?:BSE-\d+_)?([A-Z]{2,3})(?:_|$)/)
-          if (match && match[1] && match[1] !== "BSE") {
-            pracaSet.add(match[1])
+          const detectedPraca = detectPracaFromCampaign(item.campaignName)
+          if (detectedPraca) {
+            pracaSet.add(detectedPraca)
           }
         }
       })
@@ -207,8 +207,8 @@ const CriativosMeta: FC = () => {
     // Filtro por praça
     if (selectedPraca) {
       filtered = filtered.filter((item) => {
-        const match = item.campaignName.match(/(?:BSE-\d+_)?([A-Z]{2,3})(?:_|$)/)
-        return match && match[1] === selectedPraca
+        const detectedPraca = detectPracaFromCampaign(item.campaignName)
+        return detectedPraca === selectedPraca
       })
     }
 
@@ -294,15 +294,31 @@ const CriativosMeta: FC = () => {
     })
   }
 
+  // Função para detectar praça baseada no Campaign name
+  const detectPracaFromCampaign = (campaignName: string): string | null => {
+    if (!campaignName) return null
+    
+    const upperCampaign = campaignName.toUpperCase()
+    
+    // Regras para BH
+    const bhTerms = ["BB | ANC | SEG | CCBB F2 | BH FULLGAS | ALCANCE | CPM | META"]
+    if (bhTerms.some(term => upperCampaign.includes(term))) {
+      return "BH"
+    }
+    
+    // Regras para SP
+    const spTerms = ["BB | SP MEME | META | REELS | FILME PRINCIPAL DA CAMPANHA | 30"]
+    if (spTerms.some(term => upperCampaign.includes(term))) {
+      return "SP"
+    }
+    
+    return null
+  }
+
   const getPracaName = (codigo: string): string => {
     const pracaMap: Record<string, string> = {
-      BSB: "Brasília",
       BH: "Belo Horizonte",
-      RJ: "Rio de Janeiro",
       SP: "São Paulo",
-      SSA: "Salvador",
-      SAO: "São Paulo",
-      NACIONAL: "Nacional",
     }
     return pracaMap[codigo] || codigo
   }
