@@ -188,26 +188,41 @@ const VisaoGeral: React.FC = () => {
   }, [apiData])
 
   // Filtrar dados por data
-  const filteredData = useMemo(() => {
-    if (!dateRange.start || !dateRange.end) return processedData
+  const [filteredData, setFilteredData] = useState<ProcessedData[]>([])
 
-    return processedData
-      .filter((item) => {
-        if (!item.date) return false
+  useEffect(() => {
+    if (processedData.length > 0) {
+      let filtered = processedData
 
-        // Converter data de DD/MM/YYYY para Date object
-        const dateParts = item.date.split("/")
-        if (dateParts.length !== 3) return false
+      if (dateRange.start && dateRange.end) {
+        filtered = filtered.filter((item) => {
+          if (!item.date) return false
 
-        const [day, month, year] = dateParts
-        const itemDate = new Date(Number.parseInt(year), Number.parseInt(month) - 1, Number.parseInt(day))
-        const startDate = new Date(dateRange.start)
-        const endDate = new Date(dateRange.end)
+          // Converter data de DD/MM/YYYY para Date object
+          const dateParts = item.date.split("/")
+          if (dateParts.length !== 3) return false
 
-        return itemDate >= startDate && itemDate <= endDate
-      })
-      .filter((item) => selectedPlatforms.length === 0 || selectedPlatforms.includes(item.platform))
-      .filter((item) => selectedPracas.length === 0 || selectedPracas.includes(item.praca))
+          const [day, month, year] = dateParts
+          const itemDate = new Date(Number.parseInt(year), Number.parseInt(month) - 1, Number.parseInt(day))
+          const startDate = new Date(dateRange.start)
+          const endDate = new Date(dateRange.end)
+
+          return itemDate >= startDate && itemDate <= endDate
+        })
+      }
+
+      if (selectedPlatforms.length > 0) {
+        filtered = filtered.filter((item) => selectedPlatforms.includes(item.platform))
+      }
+
+      if (selectedPracas.length > 0) {
+        filtered = filtered.filter((item) => selectedPracas.includes(item.praca))
+      }
+
+      setFilteredData(filtered)
+    } else {
+      setFilteredData([])
+    }
   }, [processedData, dateRange, selectedPlatforms, selectedPracas])
 
   // Calcular métricas por plataforma

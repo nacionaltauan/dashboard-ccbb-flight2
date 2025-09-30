@@ -3,7 +3,7 @@
 import type React from "react"
 import { useState, useEffect, useMemo, useRef } from "react"
 import { ResponsiveLine } from "@nivo/line"
-import { Calendar, Filter, TrendingUp, Play, Info, DollarSign, MousePointer, Eye, BarChart3, Target, Percent } from "lucide-react"
+import { Calendar, Filter, TrendingUp, Play, Info, DollarSign, MousePointer, Eye, BarChart3, Target, Percent, MapPin } from "lucide-react"
 import { useConsolidadoNacionalData } from "../../services/api"
 import PDFDownloadButton from "../../components/PDFDownloadButton/PDFDownloadButton"
 import AnaliseSemanal from "./components/AnaliseSemanal"
@@ -211,11 +211,15 @@ const LinhaTempo: React.FC = () => {
         filtered = filtered.filter((item) => selectedVehicles.includes(item.platform))
       }
 
+      if (selectedPracas.length > 0) {
+        filtered = filtered.filter((item) => selectedPracas.includes(item.praca))
+      }
+
       setFilteredData(filtered)
     } else {
       setFilteredData([])
     }
-  }, [processedData, dateRange, selectedVehicles])
+  }, [processedData, dateRange, selectedVehicles, selectedPracas])
 
   const getMetricValue = (item: DataPoint, metric: typeof selectedMetric): number => {
     switch (metric) {
@@ -361,6 +365,15 @@ const LinhaTempo: React.FC = () => {
     })
   }
 
+  const togglePraca = (praca: string) => {
+    setSelectedPracas((prev) => {
+      if (prev.includes(praca)) {
+        return prev.filter((p) => p !== praca)
+      }
+      return [...prev, praca]
+    })
+  }
+
   useEffect(() => {
     if (processedData.length > 0) {
       const pracaSet = new Set<string>()
@@ -416,7 +429,7 @@ const LinhaTempo: React.FC = () => {
       </div>
 
       <div className="card-overlay rounded-lg shadow-lg p-4">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
               <Calendar className="w-4 h-4 mr-2" /> Período
@@ -478,6 +491,26 @@ const LinhaTempo: React.FC = () => {
                   className={`px-3 py-1 rounded-full text-xs font-medium transition-colors duration-200 flex items-center ${ selectedMetric === key ? "bg-purple-100 text-purple-800 border border-purple-300" : "bg-gray-100 text-gray-600 border border-gray-300 hover:bg-gray-200" }`}
                 >
                   <Icon className="w-3 h-3 mr-1.5" /> {label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+              <MapPin className="w-4 h-4 mr-2" /> Praças
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {availablePracas.map((praca) => (
+                <button
+                  key={praca}
+                  onClick={() => togglePraca(praca)}
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors duration-200 ${
+                    selectedPracas.includes(praca)
+                      ? "bg-blue-100 text-blue-800 border border-blue-300"
+                      : "bg-gray-100 text-gray-600 border border-gray-300 hover:bg-gray-200"
+                  }`}
+                >
+                  {praca}
                 </button>
               ))}
             </div>
