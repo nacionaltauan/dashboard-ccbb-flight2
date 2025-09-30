@@ -155,7 +155,7 @@ const VisaoGeral: React.FC = () => {
             clicks: parseInteger(row[headers.indexOf("Clicks")]),
             frequency: 1, // Será calculado depois
             cpm: 0, // Será calculado depois
-            praca: "Nacional", // Valor padrão para dados nacionais
+            praca: row[headers.indexOf("Praça")] || "Nacional",
           }
         })
         .filter((item: ProcessedData) => item.date && item.impressions > 0)

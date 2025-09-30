@@ -140,7 +140,7 @@ const LinhaTempo: React.FC = () => {
         const videoCompletions = item["Video completions "]
         const tipoCompra = item["Tipo de Compra"]
         const veiculo = item["Veículo"]
-        const praca = "N/A"
+        const praca = item["Praça"] || "Nacional"
 
         const dataPoint: DataPoint = {
           date: parseDate(date) || "",
