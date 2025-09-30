@@ -1,6 +1,6 @@
 "use client"
 import { useState, useEffect, useMemo, useCallback, useRef, type FC } from "react"
-import { Calendar } from "lucide-react"
+import { Calendar, MapPin } from "lucide-react"
 import { apiNacional } from "../../services/api"
 import Loading from "../../components/Loading/Loading"
 import PDFDownloadButton from "../../components/PDFDownloadButton/PDFDownloadButton"
@@ -62,6 +62,8 @@ const CriativosMeta: FC = () => {
   const { data: apiData, loading, error } = useMetaTratadoData()
   const [processedData, setProcessedData] = useState<CreativeData[]>([])
   const [dateRange, setDateRange] = useState<{ start: string; end: string }>({ start: "", end: "" })
+  const [selectedPraca, setSelectedPraca] = useState<string>("")
+  const [availablePracas, setAvailablePracas] = useState<string[]>([])
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage] = useState(10)
   
@@ -165,6 +167,16 @@ const CriativosMeta: FC = () => {
         setDateRange({ start: startDate, end: endDate })
       }
 
+      // Detectar praças disponíveis baseadas nos criativos
+      const pracaSet = new Set<string>()
+      processed.forEach((item) => {
+        const detectedPraca = detectPracaFromCreative(item.creativeTitle)
+        if (detectedPraca) {
+          pracaSet.add(detectedPraca)
+        }
+      })
+      const pracas = Array.from(pracaSet).filter(Boolean).sort()
+      setAvailablePracas(pracas)
     }
   }, [apiData])
 
@@ -189,7 +201,13 @@ const CriativosMeta: FC = () => {
       })
     }
 
-
+    // Filtro por praça
+    if (selectedPraca) {
+      filtered = filtered.filter((item) => {
+        const detectedPraca = detectPracaFromCreative(item.creativeTitle)
+        return detectedPraca === selectedPraca
+      })
+    }
 
     // Agrupar por criativo APÓS a filtragem
     const groupedData: Record<string, CreativeData> = {}
@@ -223,7 +241,7 @@ const CriativosMeta: FC = () => {
     finalData.sort((a, b) => b.totalSpent - a.totalSpent)
 
     return finalData
-  }, [processedData, dateRange])
+  }, [processedData, dateRange, selectedPraca])
 
   const paginatedData = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage
@@ -270,6 +288,25 @@ const CriativosMeta: FC = () => {
       style: "currency",
       currency: "BRL",
     })
+  }
+
+  // Função para detectar praça baseada no nome do criativo
+  const detectPracaFromCreative = (creativeTitle: string): string | null => {
+    if (!creativeTitle) return null
+    
+    const upperCreative = creativeTitle.toUpperCase()
+    
+    // Regras para São Paulo
+    if (upperCreative.includes("SP MEME")) {
+      return "São Paulo"
+    }
+    
+    // Regras para Belo Horizonte
+    if (upperCreative.includes("BH FULLGAS")) {
+      return "Belo Horizonte"
+    }
+    
+    return null
   }
 
 
@@ -334,7 +371,7 @@ const CriativosMeta: FC = () => {
       </div>
 
       <div className="card-overlay rounded-lg shadow-lg p-4">
-        <div className="grid grid-cols-1 lg:grid-cols-1 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
               <Calendar className="w-4 h-4 mr-2" />
@@ -356,6 +393,24 @@ const CriativosMeta: FC = () => {
             </div>
           </div>
 
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+              <MapPin className="w-4 h-4 mr-2" />
+              Praça
+            </label>
+            <select
+              value={selectedPraca}
+              onChange={(e) => setSelectedPraca(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+            >
+              <option value="">Todas as praças</option>
+              {availablePracas.map((praca) => (
+                <option key={praca} value={praca}>
+                  {praca}
+                </option>
+              ))}
+            </select>
+          </div>
 
         </div>
       </div>
