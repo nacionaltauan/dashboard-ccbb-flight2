@@ -62,10 +62,6 @@ const CriativosMeta: FC = () => {
   const { data: apiData, loading, error } = useMetaTratadoData()
   const [processedData, setProcessedData] = useState<CreativeData[]>([])
   const [dateRange, setDateRange] = useState<{ start: string; end: string }>({ start: "", end: "" })
-  const [selectedPraca, setSelectedPraca] = useState<string>("")
-  
-  
-  const [availablePracas, setAvailablePracas] = useState<string[]>([])
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage] = useState(10)
   
@@ -169,17 +165,6 @@ const CriativosMeta: FC = () => {
         setDateRange({ start: startDate, end: endDate })
       }
 
-      const pracaSet = new Set<string>()
-      processed.forEach((item) => {
-        if (item.campaignName) {
-          const match = item.campaignName.match(/(?:BSE-\d+_)?([A-Z]{2,3})(?:_|$)/)
-          if (match && match[1] && match[1] !== "BSE") {
-            pracaSet.add(match[1])
-          }
-        }
-      })
-      const pracas = Array.from(pracaSet).filter(Boolean).sort()
-      setAvailablePracas(pracas)
     }
   }, [apiData])
 
@@ -204,13 +189,6 @@ const CriativosMeta: FC = () => {
       })
     }
 
-    // Filtro por praça
-    if (selectedPraca) {
-      filtered = filtered.filter((item) => {
-        const match = item.campaignName.match(/(?:BSE-\d+_)?([A-Z]{2,3})(?:_|$)/)
-        return match && match[1] === selectedPraca
-      })
-    }
 
 
     // Agrupar por criativo APÓS a filtragem
@@ -245,7 +223,7 @@ const CriativosMeta: FC = () => {
     finalData.sort((a, b) => b.totalSpent - a.totalSpent)
 
     return finalData
-  }, [processedData, selectedPraca, dateRange])
+  }, [processedData, dateRange])
 
   const paginatedData = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage
@@ -294,18 +272,6 @@ const CriativosMeta: FC = () => {
     })
   }
 
-  const getPracaName = (codigo: string): string => {
-    const pracaMap: Record<string, string> = {
-      BSB: "Brasília",
-      BH: "Belo Horizonte",
-      RJ: "Rio de Janeiro",
-      SP: "São Paulo",
-      SSA: "Salvador",
-      SAO: "São Paulo",
-      NACIONAL: "Nacional",
-    }
-    return pracaMap[codigo] || codigo
-  }
 
   const openCreativeModal = (creative: CreativeData) => {
     const mediaData = googleDriveApi.findMediaForCreative(creative.creativeTitle, creativeMedias)
@@ -368,7 +334,7 @@ const CriativosMeta: FC = () => {
       </div>
 
       <div className="card-overlay rounded-lg shadow-lg p-4">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-1 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
               <Calendar className="w-4 h-4 mr-2" />
@@ -390,21 +356,6 @@ const CriativosMeta: FC = () => {
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Praça</label>
-            <select
-              value={selectedPraca}
-              onChange={(e) => setSelectedPraca(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-            >
-              <option value="">Todas as praças</option>
-              {availablePracas.map((praca) => (
-                <option key={praca} value={praca}>
-                  {getPracaName(praca)}
-                </option>
-              ))}
-            </select>
-          </div>
 
         </div>
       </div>
