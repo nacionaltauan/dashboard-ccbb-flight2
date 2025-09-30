@@ -46,10 +46,6 @@ const CriativosTikTok: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage] = useState(10)
   
-  // 1. GERENCIAMENTO DE ESTADO DO FILTRO
-  // Adicionado estado para controlar o filtro de categoria ativo.
-  // O valor inicial é 'geral', exibindo todos os criativos.
-  const [activeCategoryFilter, setActiveCategoryFilter] = useState('geral'); // 'geral', 'influenciadores', 'campanhaRegular'
 
   const [creativeMedias, setCreativeMedias] = useState<Map<string, { url: string, type: string }>>(new Map())
   const [mediasLoading, setMediasLoading] = useState(false)
@@ -158,19 +154,6 @@ const CriativosTikTok: React.FC = () => {
       })
     }
 
-    // Lógica de filtragem por categoria (nova implementação)
-    const influencerTerms = ["INFLUENCIADOR-MATHEUS", "INFLU-CAROL", "NC00069", "SMART-CREATIVE_001"];
-
-    if (activeCategoryFilter === 'influenciadores') {
-      filtered = filtered.filter(item => 
-        influencerTerms.some(term => item.adName.includes(term))
-      );
-    } else if (activeCategoryFilter === 'campanhaRegular') {
-      filtered = filtered.filter(item => 
-        !influencerTerms.some(term => item.adName.includes(term))
-      );
-    }
-    // Se 'geral', nenhuma filtragem adicional é aplicada aqui.
 
     const groupedData: Record<string, CreativeData> = {}
     filtered.forEach((item) => {
@@ -208,7 +191,7 @@ const CriativosTikTok: React.FC = () => {
     finalData.sort((a, b) => b.cost - a.cost)
 
     return finalData
-  }, [processedData, dateRange, activeCategoryFilter]) // Adicionado activeCategoryFilter como dependência
+  }, [processedData, dateRange])
 
   const paginatedData = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage
@@ -338,45 +321,6 @@ const CriativosTikTok: React.FC = () => {
             </div>
           </div>
 
-          {/* 2. MODIFICAÇÃO DA INTERFACE (JSX) */}
-          {/* O div antigo foi substituído por este novo bloco com os botões de filtro. */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Influenciadores/Campanha
-            </label>
-            <div className="flex space-x-2 bg-gray-50 border border-gray-300 rounded-md p-1">
-              <button
-                onClick={() => setActiveCategoryFilter('geral')}
-                className={`flex-1 px-3 py-1.5 text-sm rounded-md transition-colors duration-200 ${
-                  activeCategoryFilter === 'geral'
-                    ? 'bg-pink-600 text-white shadow-sm'
-                    : 'bg-transparent text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                Geral
-              </button>
-              <button
-                onClick={() => setActiveCategoryFilter('influenciadores')}
-                className={`flex-1 px-3 py-1.5 text-sm rounded-md transition-colors duration-200 ${
-                  activeCategoryFilter === 'influenciadores'
-                    ? 'bg-pink-600 text-white shadow-sm'
-                    : 'bg-transparent text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                Influenciadores
-              </button>
-              <button
-                onClick={() => setActiveCategoryFilter('campanhaRegular')}
-                className={`flex-1 px-3 py-1.5 text-sm rounded-md transition-colors duration-200 ${
-                  activeCategoryFilter === 'campanhaRegular'
-                    ? 'bg-pink-600 text-white shadow-sm'
-                    : 'bg-transparent text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                Campanha Regular
-              </button>
-            </div>
-          </div>
         </div>
       </div>
 

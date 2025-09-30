@@ -64,9 +64,6 @@ const CriativosMeta: FC = () => {
   const [dateRange, setDateRange] = useState<{ start: string; end: string }>({ start: "", end: "" })
   const [selectedPraca, setSelectedPraca] = useState<string>("")
   
-  // 1. GERENCIAMENTO DE ESTADO DO FILTRO
-  // Adicionado estado para controlar o filtro de categoria.
-  const [activeCategoryFilter, setActiveCategoryFilter] = useState('geral'); // 'geral', 'influenciadores', 'campanhaRegular'
   
   const [availablePracas, setAvailablePracas] = useState<string[]>([])
   const [currentPage, setCurrentPage] = useState(1)
@@ -215,19 +212,6 @@ const CriativosMeta: FC = () => {
       })
     }
 
-    // Nova lógica de filtragem por categoria
-    const influencerTerms = ["INFLUENCIADORA_CAROL"];
-
-    if (activeCategoryFilter === 'influenciadores') {
-      filtered = filtered.filter(item => 
-        influencerTerms.some(term => item.creativeTitle.includes(term))
-      );
-    } else if (activeCategoryFilter === 'campanhaRegular') {
-      filtered = filtered.filter(item => 
-        !influencerTerms.some(term => item.creativeTitle.includes(term))
-      );
-    }
-    // Se 'geral', a variável 'filtered' segue sem modificação.
 
     // Agrupar por criativo APÓS a filtragem
     const groupedData: Record<string, CreativeData> = {}
@@ -261,7 +245,7 @@ const CriativosMeta: FC = () => {
     finalData.sort((a, b) => b.totalSpent - a.totalSpent)
 
     return finalData
-  }, [processedData, selectedPraca, dateRange, activeCategoryFilter]) // Adicionada dependência
+  }, [processedData, selectedPraca, dateRange])
 
   const paginatedData = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage
@@ -384,7 +368,7 @@ const CriativosMeta: FC = () => {
       </div>
 
       <div className="card-overlay rounded-lg shadow-lg p-4">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
               <Calendar className="w-4 h-4 mr-2" />
@@ -422,45 +406,6 @@ const CriativosMeta: FC = () => {
             </select>
           </div>
 
-          {/* 2. MODIFICAÇÃO DA INTERFACE (JSX) */}
-          {/* O div "Total de Criativos" foi substituído por este bloco. */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Influenciadores/Campanha
-            </label>
-            <div className="flex space-x-2 bg-gray-50 border border-gray-300 rounded-md p-1">
-              <button
-                onClick={() => setActiveCategoryFilter('geral')}
-                className={`flex-1 px-3 py-1.5 text-sm rounded-md transition-colors duration-200 ${
-                  activeCategoryFilter === 'geral'
-                    ? 'bg-blue-600 text-white shadow-sm'
-                    : 'bg-transparent text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                Geral
-              </button>
-              <button
-                onClick={() => setActiveCategoryFilter('influenciadores')}
-                className={`flex-1 px-3 py-1.5 text-sm rounded-md transition-colors duration-200 ${
-                  activeCategoryFilter === 'influenciadores'
-                    ? 'bg-blue-600 text-white shadow-sm'
-                    : 'bg-transparent text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                Influenciadores
-              </button>
-              <button
-                onClick={() => setActiveCategoryFilter('campanhaRegular')}
-                className={`flex-1 px-3 py-1.5 text-sm rounded-md transition-colors duration-200 ${
-                  activeCategoryFilter === 'campanhaRegular'
-                    ? 'bg-blue-600 text-white shadow-sm'
-                    : 'bg-transparent text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                Campanha Regular
-              </button>
-            </div>
-          </div>
         </div>
       </div>
 

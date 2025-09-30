@@ -41,3 +41,4 @@ O dashboard é automaticamente deployado na Vercel quando há push na branch `ma
 ## 📝 Licença
 
 Projeto privado - CCBB Flight2
+
