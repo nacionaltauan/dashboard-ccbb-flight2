@@ -153,6 +153,25 @@ const CriativosTikTok: React.FC = () => {
     setAvailablePracas(pracas)
   }, [apiData])
 
+  // Função para detectar praça baseada no nome do criativo
+  const detectPracaFromCreative = (adName: string): string | null => {
+    if (!adName) return null
+    
+    const upperAdName = adName.toUpperCase()
+    
+    // Regras para São Paulo
+    if (upperAdName.includes("SP MEME")) {
+      return "São Paulo"
+    }
+    
+    // Regras para Belo Horizonte
+    if (upperAdName.includes("BH FULLGAS")) {
+      return "Belo Horizonte"
+    }
+    
+    return null
+  }
+
   // 3. ATUALIZAÇÃO DA LÓGICA DE FILTRAGEM
   const filteredData = useMemo(() => {
     let filtered = processedData
@@ -263,24 +282,6 @@ const CriativosTikTok: React.FC = () => {
     })
   }
 
-  // Função para detectar praça baseada no nome do criativo
-  const detectPracaFromCreative = (adName: string): string | null => {
-    if (!adName) return null
-    
-    const upperAdName = adName.toUpperCase()
-    
-    // Regras para São Paulo
-    if (upperAdName.includes("SP MEME")) {
-      return "São Paulo"
-    }
-    
-    // Regras para Belo Horizonte
-    if (upperAdName.includes("BH FULLGAS")) {
-      return "Belo Horizonte"
-    }
-    
-    return null
-  }
 
   const openCreativeModal = (creative: CreativeData) => {
     const driveMediaData = googleDriveApi.findMediaForCreative(creative.adName, creativeMedias)

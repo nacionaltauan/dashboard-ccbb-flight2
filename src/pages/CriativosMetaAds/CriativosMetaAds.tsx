@@ -180,6 +180,25 @@ const CriativosMeta: FC = () => {
     }
   }, [apiData])
 
+  // Função para detectar praça baseada no nome do criativo
+  const detectPracaFromCreative = (creativeTitle: string): string | null => {
+    if (!creativeTitle) return null
+    
+    const upperCreative = creativeTitle.toUpperCase()
+    
+    // Regras para São Paulo
+    if (upperCreative.includes("SP MEME")) {
+      return "São Paulo"
+    }
+    
+    // Regras para Belo Horizonte
+    if (upperCreative.includes("BH FULLGAS")) {
+      return "Belo Horizonte"
+    }
+    
+    return null
+  }
+
   // 3. ATUALIZAÇÃO DA LÓGICA DE FILTRAGEM
   const filteredData = useMemo(() => {
     let filtered = processedData
@@ -290,24 +309,6 @@ const CriativosMeta: FC = () => {
     })
   }
 
-  // Função para detectar praça baseada no nome do criativo
-  const detectPracaFromCreative = (creativeTitle: string): string | null => {
-    if (!creativeTitle) return null
-    
-    const upperCreative = creativeTitle.toUpperCase()
-    
-    // Regras para São Paulo
-    if (upperCreative.includes("SP MEME")) {
-      return "São Paulo"
-    }
-    
-    // Regras para Belo Horizonte
-    if (upperCreative.includes("BH FULLGAS")) {
-      return "Belo Horizonte"
-    }
-    
-    return null
-  }
 
 
   const openCreativeModal = (creative: CreativeData) => {
