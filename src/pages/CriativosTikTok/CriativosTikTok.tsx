@@ -67,7 +67,7 @@ const CriativosTikTok: React.FC = () => {
 
   // Função para determinar se é vídeo ou display
   const getMediaType = (creative: CreativeData): string => {
-    return creative.videoViews > 0 || creative.videoStarts > 0 ? "VÍDEO" : "DISPLAY"
+    return creative.videoViews > 0 || creative.videoViews100 > 0 ? "VÍDEO" : "DISPLAY"
   }
 
   // Função para obter dados de benchmark
