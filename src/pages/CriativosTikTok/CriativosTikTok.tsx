@@ -452,8 +452,8 @@ const CriativosTikTok: React.FC = () => {
         </div>
 
         <div className="card-overlay rounded-lg shadow-lg p-4 text-center">
-          <div className="text-sm text-gray-600 mb-1">Engajamentos</div>
-          <div className="text-lg font-bold text-gray-900">{formatNumber(totals.totalEngagements)}</div>
+          <div className="text-sm text-gray-600 mb-1">Tx. Engaj.</div>
+          <div className="text-lg font-bold text-gray-900">{totals.impressions > 0 ? ((totals.totalEngagements / totals.impressions) * 100).toFixed(2) : 0}%</div>
         </div>
       </div>
 
@@ -470,11 +470,11 @@ const CriativosTikTok: React.FC = () => {
                 <th className="text-right py-3 px-4 font-semibold min-w-[7.5rem]">Cliques</th>
                 <th className="text-right py-3 px-4 font-semibold min-w-[7.5rem]">Views 100%</th>
                 <th className="text-right py-3 px-4 font-semibold min-w-[7.5rem]">Likes</th>
-                <th className="text-right py-3 px-4 font-semibold min-w-[7.5rem]">Engajamentos</th>
+                <th className="text-right py-3 px-4 font-semibold min-w-[7.5rem]">Tx. Engaj.</th>
                 <th className="text-right py-3 px-4 font-semibold min-w-[7.5rem]">VTR</th>
                 <th className="text-right py-3 px-4 font-semibold min-w-[7.5rem]">CPM</th>
-                <th className="text-right py-3 px-4 font-semibold min-w-[4rem]">Δ CPM</th>
-                <th className="text-right py-3 px-4 font-semibold min-w-[4rem]">Δ VTR</th>
+                <th className="text-right py-3 px-4 font-semibold min-w-[4rem] text-[10px]">Δ CPM</th>
+                <th className="text-right py-3 px-4 font-semibold min-w-[4rem] text-[10px]">Δ VTR</th>
               </tr>
             </thead>
             <tbody>
@@ -561,7 +561,7 @@ const CriativosTikTok: React.FC = () => {
                     <td className="py-3 px-4 text-right min-w-[7.5rem]">{formatNumber(creative.clicks)}</td>
                     <td className="py-3 px-4 text-right min-w-[7.5rem]">{formatNumber(creative.videoViews100)}</td>
                     <td className="py-3 px-4 text-right min-w-[7.5rem]">{formatNumber(creative.paidLikes)}</td>
-                    <td className="py-3 px-4 text-right min-w-[7.5rem]">{formatNumber(creative.paidComments + creative.paidShares + creative.paidFollows + creative.profileVisits)}</td>
+                    <td className="py-3 px-4 text-right min-w-[7.5rem]">{creative.impressions > 0 ? (((creative.paidComments + creative.paidShares + creative.paidFollows + creative.profileVisits) / creative.impressions) * 100).toFixed(2) : 0}%</td>
                     <td className="py-3 px-4 text-right min-w-[7.5rem]">{vtr.toFixed(2)}%</td>
                     <td className="py-3 px-4 text-right min-w-[7.5rem]">{formatCurrency(cpm)}</td>
                     <td className={`py-3 px-4 text-right min-w-[4rem] text-xs font-medium ${cpmVariation.color}`}>
