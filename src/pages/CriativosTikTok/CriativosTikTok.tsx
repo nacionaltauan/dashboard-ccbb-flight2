@@ -9,6 +9,7 @@ import { googleDriveApi } from "../../services/googleDriveApi"
 import PDFDownloadButton from "../../components/PDFDownloadButton/PDFDownloadButton"
 import MediaThumbnail from "../../components/MediaThumbnail/MediaThumbnail" // Importe o novo componente
 import TikTokCreativeModal from "./components/TikTokCreativeModal" // Importe o modal
+import { useBenchmarkNacionalData, processBenchmarkData, calculateVariation } from "../../services/benchmarkApi"
 
 interface CreativeData {
   date: string
@@ -41,6 +42,7 @@ interface CreativeData {
 const CriativosTikTok: React.FC = () => {
   const contentRef = useRef<HTMLDivElement>(null)
   const { data: apiData, loading, error } = useTikTokNacionalData()
+  const { data: benchmarkData, loading: benchmarkLoading } = useBenchmarkNacionalData()
   const [processedData, setProcessedData] = useState<CreativeData[]>([])
   const [dateRange, setDateRange] = useState<{ start: string; end: string }>({ start: "", end: "" })
   const [selectedPracas, setSelectedPracas] = useState<string[]>([])
@@ -54,6 +56,26 @@ const CriativosTikTok: React.FC = () => {
 
   const [selectedCreative, setSelectedCreative] = useState<CreativeData | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
+
+  // Processar dados de benchmark
+  const benchmarkMap = useMemo(() => {
+    if (benchmarkData?.data) {
+      return processBenchmarkData(benchmarkData.data)
+    }
+    return new Map()
+  }, [benchmarkData])
+
+  // Função para determinar se é vídeo ou display
+  const getMediaType = (creative: CreativeData): string => {
+    return creative.videoViews > 0 || creative.videoStarts > 0 ? "VÍDEO" : "DISPLAY"
+  }
+
+  // Função para obter dados de benchmark
+  const getBenchmarkData = (creative: CreativeData) => {
+    const mediaType = getMediaType(creative)
+    const key = `TIK TOK_${mediaType}`
+    return benchmarkMap.get(key)
+  }
 
   useEffect(() => {
     const loadMedias = async () => {
@@ -443,6 +465,9 @@ const CriativosTikTok: React.FC = () => {
                 <th className="text-right py-3 px-4 font-semibold min-w-[7.5rem]">Views 100%</th>
                 <th className="text-right py-3 px-4 font-semibold min-w-[7.5rem]">Likes</th>
                 <th className="text-right py-3 px-4 font-semibold min-w-[7.5rem]">VTR</th>
+                <th className="text-right py-3 px-4 font-semibold min-w-[4rem]">Δ CPM</th>
+                <th className="text-right py-3 px-4 font-semibold min-w-[4rem]">Δ CPC</th>
+                <th className="text-right py-3 px-4 font-semibold min-w-[4rem]">Δ CTR</th>
               </tr>
             </thead>
             <tbody>
@@ -450,6 +475,17 @@ const CriativosTikTok: React.FC = () => {
                 const vtr = creative.impressions > 0 ? (creative.videoViews100 / creative.impressions) * 100 : 0
                 const driveMediaData = googleDriveApi.findMediaForCreative(creative.adName, creativeMedias)
                 const tiktokThumbnail = creative.videoThumbnailUrl
+                const benchmark = getBenchmarkData(creative)
+                
+                // Calcular métricas para comparação
+                const cpm = creative.impressions > 0 ? (creative.cost / creative.impressions) * 1000 : 0
+                const cpc = creative.clicks > 0 ? creative.cost / creative.clicks : 0
+                const ctr = creative.impressions > 0 ? (creative.clicks / creative.impressions) * 100 : 0
+                
+                // Calcular variações
+                const cpmVariation = benchmark ? calculateVariation(cpm, benchmark.cpm, 'cost') : { value: "-", color: "text-gray-500" }
+                const cpcVariation = benchmark ? calculateVariation(cpc, benchmark.cpc, 'cost') : { value: "-", color: "text-gray-500" }
+                const ctrVariation = benchmark ? calculateVariation(ctr, benchmark.ctr, 'performance') : { value: "-", color: "text-gray-500" }
 
                 return (
                   <tr key={index} className={index % 2 === 0 ? "bg-pink-50" : "bg-white"}>
@@ -522,6 +558,15 @@ const CriativosTikTok: React.FC = () => {
                     <td className="py-3 px-4 text-right min-w-[7.5rem]">{formatNumber(creative.videoViews100)}</td>
                     <td className="py-3 px-4 text-right min-w-[7.5rem]">{formatNumber(creative.paidLikes)}</td>
                     <td className="py-3 px-4 text-right min-w-[7.5rem]">{vtr.toFixed(2)}%</td>
+                    <td className={`py-3 px-4 text-right min-w-[4rem] text-xs font-medium ${cpmVariation.color}`}>
+                      {cpmVariation.value}
+                    </td>
+                    <td className={`py-3 px-4 text-right min-w-[4rem] text-xs font-medium ${cpcVariation.color}`}>
+                      {cpcVariation.value}
+                    </td>
+                    <td className={`py-3 px-4 text-right min-w-[4rem] text-xs font-medium ${ctrVariation.color}`}>
+                      {ctrVariation.value}
+                    </td>
                   </tr>
                 )
               })}

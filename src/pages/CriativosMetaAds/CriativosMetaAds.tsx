@@ -7,6 +7,7 @@ import PDFDownloadButton from "../../components/PDFDownloadButton/PDFDownloadBut
 import { googleDriveApi } from "../../services/googleDriveApi"
 import MediaThumbnail from "../../components/MediaThumbnail/MediaThumbnail"
 import MetaCreativeModal from "./components/MetaCreativeModal"
+import { useBenchmarkNacionalData, processBenchmarkData, calculateVariation } from "../../services/benchmarkApi"
 
 interface CreativeData {
   date: string
@@ -60,6 +61,7 @@ const useMetaTratadoData = () => {
 const CriativosMeta: FC = () => {
   const contentRef = useRef<HTMLDivElement>(null)
   const { data: apiData, loading, error } = useMetaTratadoData()
+  const { data: benchmarkData, loading: benchmarkLoading } = useBenchmarkNacionalData()
   const [processedData, setProcessedData] = useState<CreativeData[]>([])
   const [dateRange, setDateRange] = useState<{ start: string; end: string }>({ start: "", end: "" })
   const [selectedPracas, setSelectedPracas] = useState<string[]>([])
@@ -72,6 +74,26 @@ const CriativosMeta: FC = () => {
 
   const [selectedCreative, setSelectedCreative] = useState<CreativeData | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
+
+  // Processar dados de benchmark
+  const benchmarkMap = useMemo(() => {
+    if (benchmarkData?.data) {
+      return processBenchmarkData(benchmarkData.data)
+    }
+    return new Map()
+  }, [benchmarkData])
+
+  // Função para determinar se é vídeo ou display
+  const getMediaType = (creative: CreativeData): string => {
+    return creative.videoViews > 0 || creative.videoStarts > 0 ? "VÍDEO" : "DISPLAY"
+  }
+
+  // Função para obter dados de benchmark
+  const getBenchmarkData = (creative: CreativeData) => {
+    const mediaType = getMediaType(creative)
+    const key = `META_${mediaType}`
+    return benchmarkMap.get(key)
+  }
 
   useEffect(() => {
     const loadMedias = async () => {
@@ -501,13 +523,22 @@ const CriativosMeta: FC = () => {
                 <th className="text-right py-3 px-4 font-semibold min-w-[7.5rem]">Cliques</th>
                 <th className="text-right py-3 px-4 font-semibold min-w-[7.5rem]">Visualizações</th>
                 <th className="text-right py-3 px-4 font-semibold min-w-[7.5rem]">CPM</th>
+                <th className="text-right py-3 px-4 font-semibold min-w-[4rem]">Δ CPM</th>
                 <th className="text-right py-3 px-4 font-semibold min-w-[7.5rem]">CPC</th>
+                <th className="text-right py-3 px-4 font-semibold min-w-[4rem]">Δ CPC</th>
                 <th className="text-right py-3 px-4 font-semibold min-w-[7.5rem]">CTR</th>
+                <th className="text-right py-3 px-4 font-semibold min-w-[4rem]">Δ CTR</th>
               </tr>
             </thead>
             <tbody>
               {paginatedData.map((creative, index) => {
                 const mediaData = googleDriveApi.findMediaForCreative(creative.creativeTitle, creativeMedias)
+                const benchmark = getBenchmarkData(creative)
+                
+                // Calcular variações
+                const cpmVariation = benchmark ? calculateVariation(creative.cpm, benchmark.cpm, 'cost') : { value: "-", color: "text-gray-500" }
+                const cpcVariation = benchmark ? calculateVariation(creative.cpc, benchmark.cpc, 'cost') : { value: "-", color: "text-gray-500" }
+                const ctrVariation = benchmark ? calculateVariation(creative.ctr, benchmark.ctr, 'performance') : { value: "-", color: "text-gray-500" }
 
                 return (
                   <tr key={index} className={index % 2 === 0 ? "bg-blue-50" : "bg-white"}>
@@ -538,8 +569,17 @@ const CriativosMeta: FC = () => {
                     <td className="py-3 px-4 text-right min-w-[7.5rem]">{formatNumber(creative.clicks)}</td>
                     <td className="py-3 px-4 text-right min-w-[7.5rem]">{formatNumber(creative.videoViews)}</td>
                     <td className="py-3 px-4 text-right min-w-[7.5rem]">{formatCurrency(creative.cpm)}</td>
+                    <td className={`py-3 px-4 text-right min-w-[4rem] text-xs font-medium ${cpmVariation.color}`}>
+                      {cpmVariation.value}
+                    </td>
                     <td className="py-3 px-4 text-right min-w-[7.5rem]">{formatCurrency(creative.cpc)}</td>
+                    <td className={`py-3 px-4 text-right min-w-[4rem] text-xs font-medium ${cpcVariation.color}`}>
+                      {cpcVariation.value}
+                    </td>
                     <td className="py-3 px-4 text-right min-w-[7.5rem]">{creative.ctr.toFixed(2)}%</td>
+                    <td className={`py-3 px-4 text-right min-w-[4rem] text-xs font-medium ${ctrVariation.color}`}>
+                      {ctrVariation.value}
+                    </td>
                   </tr>
                 )
               })}
