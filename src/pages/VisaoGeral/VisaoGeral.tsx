@@ -4,6 +4,7 @@ import type React from "react"
 import { useState, useEffect, useMemo, useRef } from "react"
 import { BarChart3, Calendar, Filter, MapPin } from "lucide-react"
 import { useConsolidadoNacionalData } from "../../services/api"
+import { useBenchmarkNacionalData, processBenchmarkData } from "../../services/benchmarkApi"
 import PDFDownloadButton from "../../components/PDFDownloadButton/PDFDownloadButton"
 import Loading from "../../components/Loading/Loading"
 
@@ -54,6 +55,7 @@ interface ChartDataPoint {
 const VisaoGeral: React.FC = () => {
   const contentRef = useRef<HTMLDivElement>(null)
   const { data: apiData, loading, error } = useConsolidadoNacionalData()
+  const { data: benchmarkData } = useBenchmarkNacionalData()
   const [processedData, setProcessedData] = useState<ProcessedData[]>([])
   const [dateRange, setDateRange] = useState<{ start: string; end: string }>({ start: "", end: "" })
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([])
@@ -93,6 +95,79 @@ const VisaoGeral: React.FC = () => {
     })
     return Array.from(pracas)
   }, [processedData])
+
+  // Processar dados de benchmark
+  const benchmarkMap = useMemo(() => {
+    if (benchmarkData?.data) {
+      return processBenchmarkData(benchmarkData.data)
+    }
+    return new Map()
+  }, [benchmarkData])
+
+  // Identificar veículos disponíveis nos dados filtrados
+  const availableVehicles = useMemo(() => {
+    const vehicles = new Set<string>()
+    filteredData.forEach((item) => {
+      vehicles.add(item.platform)
+    })
+    return Array.from(vehicles)
+  }, [filteredData])
+
+  // Obter benchmarks para veículos disponíveis
+  const vehicleBenchmarks = useMemo(() => {
+    const benchmarks: Array<{
+      vehicle: string
+      mediaType: string
+      cpm: number
+      cpc: number
+      ctr: number
+      vtr: number
+    }> = []
+
+    availableVehicles.forEach((vehicle) => {
+      // Mapear veículo para chave do benchmark
+      let benchmarkKey = ""
+      if (vehicle === "Meta") {
+        benchmarkKey = "META"
+      } else if (vehicle === "TikTok") {
+        benchmarkKey = "TIK TOK"
+      } else {
+        // Para outros veículos, usar o nome como está
+        benchmarkKey = vehicle.toUpperCase()
+      }
+
+      // Buscar benchmarks para DISPLAY e VÍDEO
+      const displayKey = `${benchmarkKey}_DISPLAY`
+      const videoKey = `${benchmarkKey}_VÍDEO`
+
+      const displayBenchmark = benchmarkMap.get(displayKey)
+      const videoBenchmark = benchmarkMap.get(videoKey)
+
+      if (displayBenchmark) {
+        benchmarks.push({
+          vehicle,
+          mediaType: "DISPLAY",
+          cpm: displayBenchmark.cpm,
+          cpc: displayBenchmark.cpc,
+          ctr: displayBenchmark.ctr,
+          vtr: displayBenchmark.completionRate,
+        })
+      }
+
+      if (videoBenchmark) {
+        benchmarks.push({
+          vehicle,
+          mediaType: "VÍDEO",
+          cpm: videoBenchmark.cpm,
+          cpc: videoBenchmark.cpc,
+          ctr: videoBenchmark.ctr,
+          vtr: videoBenchmark.completionRate,
+        })
+      }
+    })
+
+    return benchmarks
+  }, [availableVehicles, benchmarkMap])
 
   const togglePlatform = (platform: string) => {
     setSelectedPlatforms((prev) => {
@@ -410,6 +485,75 @@ const VisaoGeral: React.FC = () => {
     )
   }
 
+  // Componente do card de benchmarks
+  const BenchmarkCard: React.FC = () => {
+    if (vehicleBenchmarks.length === 0) {
+      return (
+        <div className="card-overlay rounded-lg shadow-lg p-4 text-center min-h-[100px] flex flex-col justify-center">
+          <div className="text-sm text-gray-600 mb-1">Benchmarks</div>
+          <div className="text-lg font-bold text-gray-500">Nenhum benchmark disponível</div>
+        </div>
+      )
+    }
+
+    // Agrupar por veículo
+    const groupedBenchmarks = vehicleBenchmarks.reduce((acc, benchmark) => {
+      if (!acc[benchmark.vehicle]) {
+        acc[benchmark.vehicle] = []
+      }
+      acc[benchmark.vehicle].push(benchmark)
+      return acc
+    }, {} as Record<string, typeof vehicleBenchmarks>)
+
+    return (
+      <div className="card-overlay rounded-lg shadow-lg p-4">
+        <div className="text-sm font-medium text-gray-700 mb-3">Benchmarks de Mercado</div>
+        <div className="space-y-3">
+          {Object.entries(groupedBenchmarks).map(([vehicle, benchmarks]) => (
+            <div key={vehicle} className="space-y-2">
+              <div className="text-xs font-semibold text-gray-800 border-b border-gray-200 pb-1">
+                {vehicle}
+              </div>
+              {benchmarks.map((benchmark, index) => (
+                <div key={index} className="ml-3 space-y-1">
+                  <div className="text-xs font-medium text-gray-600">
+                    {benchmark.mediaType}
+                  </div>
+                  <div className="grid grid-cols-4 gap-2 text-xs">
+                    <div className="text-center">
+                      <div className="text-gray-500">CPM</div>
+                      <div className="font-semibold text-blue-600">
+                        {formatCurrency(benchmark.cpm)}
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-gray-500">CPC</div>
+                      <div className="font-semibold text-green-600">
+                        {formatCurrency(benchmark.cpc)}
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-gray-500">CTR</div>
+                      <div className="font-semibold text-purple-600">
+                        {benchmark.ctr.toFixed(2)}%
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-gray-500">VTR</div>
+                      <div className="font-semibold text-orange-600">
+                        {benchmark.vtr.toFixed(2)}%
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
   if (loading) {
     return <Loading message="Carregando visão geral..." />
   }
@@ -556,6 +700,11 @@ const VisaoGeral: React.FC = () => {
             format={formatFullNumber}
             mainColorClass="text-teal-600"
         />
+      </div>
+
+      {/* Card de Benchmarks */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+        <BenchmarkCard />
       </div>
 
       {/* Gráficos de Barras */}
