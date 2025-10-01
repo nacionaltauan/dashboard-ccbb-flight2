@@ -506,41 +506,41 @@ const VisaoGeral: React.FC = () => {
     }, {} as Record<string, typeof vehicleBenchmarks>)
 
     return (
-      <div className="card-overlay rounded-lg shadow-lg p-4">
-        <div className="text-sm font-medium text-gray-700 mb-3">Benchmarks de Mercado</div>
-        <div className="space-y-3">
+      <div className="card-overlay rounded-lg shadow-lg p-6">
+        <div className="text-lg font-semibold text-gray-800 mb-4">Benchmarks de Mercado</div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {Object.entries(groupedBenchmarks).map(([vehicle, benchmarks]) => (
-            <div key={vehicle} className="space-y-2">
-              <div className="text-xs font-semibold text-gray-800 border-b border-gray-200 pb-1">
+            <div key={vehicle} className="bg-gray-50 rounded-lg p-4 space-y-3">
+              <div className="text-sm font-bold text-gray-800 text-center border-b border-gray-300 pb-2">
                 {vehicle}
               </div>
               {benchmarks.map((benchmark, index) => (
-                <div key={index} className="ml-3 space-y-1">
-                  <div className="text-xs font-medium text-gray-600">
+                <div key={index} className="space-y-2">
+                  <div className="text-xs font-medium text-gray-600 text-center">
                     {benchmark.mediaType}
                   </div>
-                  <div className="grid grid-cols-4 gap-2 text-xs">
-                    <div className="text-center">
-                      <div className="text-gray-500">CPM</div>
-                      <div className="font-semibold text-blue-600">
+                  <div className="grid grid-cols-2 gap-3 text-xs">
+                    <div className="text-center bg-white rounded p-2">
+                      <div className="text-gray-500 text-xs">CPM</div>
+                      <div className="font-semibold text-blue-600 text-sm">
                         {formatCurrency(benchmark.cpm || 0)}
                       </div>
                     </div>
-                    <div className="text-center">
-                      <div className="text-gray-500">CPC</div>
-                      <div className="font-semibold text-green-600">
+                    <div className="text-center bg-white rounded p-2">
+                      <div className="text-gray-500 text-xs">CPC</div>
+                      <div className="font-semibold text-green-600 text-sm">
                         {formatCurrency(benchmark.cpc || 0)}
                       </div>
                     </div>
-                    <div className="text-center">
-                      <div className="text-gray-500">CTR</div>
-                      <div className="font-semibold text-purple-600">
+                    <div className="text-center bg-white rounded p-2">
+                      <div className="text-gray-500 text-xs">CTR</div>
+                      <div className="font-semibold text-purple-600 text-sm">
                         {(benchmark.ctr || 0).toFixed(2)}%
                       </div>
                     </div>
-                    <div className="text-center">
-                      <div className="text-gray-500">VTR</div>
-                      <div className="font-semibold text-orange-600">
+                    <div className="text-center bg-white rounded p-2">
+                      <div className="text-gray-500 text-xs">VTR</div>
+                      <div className="font-semibold text-orange-600 text-sm">
                         {(benchmark.vtr || 0).toFixed(2)}%
                       </div>
                     </div>
@@ -702,11 +702,6 @@ const VisaoGeral: React.FC = () => {
         />
       </div>
 
-      {/* Card de Benchmarks */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-        <BenchmarkCard />
-      </div>
-
       {/* Gráficos de Barras */}
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 flex-1">
         {/* Impressões por Plataforma */}
@@ -734,6 +729,11 @@ const VisaoGeral: React.FC = () => {
           <HorizontalBarChart data={clicksChartData} title="Cliques" />
         </div>
 
+      </div>
+
+      {/* Card de Benchmarks - Posicionado no final */}
+      <div className="w-full">
+        <BenchmarkCard />
       </div>
     </div>
   )
