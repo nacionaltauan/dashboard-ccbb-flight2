@@ -63,11 +63,14 @@ export const googleDriveApi = {
 
     // Verificar cache primeiro
     if (mediaCache.has(cacheKey)) {
+      console.log(`📦 [DEBUG] Cache encontrado para ${platform}`)
       return mediaCache.get(cacheKey)!
     }
 
     const folderId = PLATFORM_FOLDERS[platform]
+    console.log(`🔍 [DEBUG] Buscando arquivos na pasta ${platform}: ${folderId}`)
     const files = await this.getFolderFiles(folderId)
+    console.log(`📁 [DEBUG] Arquivos encontrados na pasta:`, files.length)
 
     // Filtrar apenas arquivos de mídia
     const mediaFiles = files.filter((file) => 
@@ -109,6 +112,7 @@ export const googleDriveApi = {
     
     const cleanCreativeName = this.cleanCreativeName(creativeName)
     const creativeWords = cleanCreativeName.split(" ").filter(word => word.length > 2)
+    console.log(`🔍 [DEBUG] Procurando mídia para: "${creativeName}" -> Limpo: "${cleanCreativeName}" -> Palavras: [${creativeWords.join(", ")}]`)
 
     // 1. Busca exata primeiro
     if (mediaMap.has(cleanCreativeName)) {
