@@ -632,9 +632,6 @@ const LinhaTempo: React.FC = () => {
                   <p className="text-xs text-gray-500">
                     Início: {createLocalDate(entry.firstDate).toLocaleDateString("pt-BR")}
                   </p>
-                   <p className="text-xs text-gray-500">
-                    Fim: {createLocalDate(entry.lastDate).toLocaleDateString("pt-BR")}
-                  </p>
                 </div>
               </div>
             ))}
