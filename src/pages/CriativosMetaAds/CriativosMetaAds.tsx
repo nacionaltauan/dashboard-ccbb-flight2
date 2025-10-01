@@ -262,7 +262,7 @@ const CriativosMeta: FC = () => {
     // Agrupar por criativo APÓS a filtragem
     const groupedData: Record<string, CreativeData> = {}
     filtered.forEach((item) => {
-      const key = `${item.creativeTitle}_${item.campaignName}`
+      const key = item.creativeTitle
       if (!groupedData[key]) {
         groupedData[key] = { ...item }
       } else {
