@@ -92,24 +92,22 @@ export const calculateVariation = (
     return { value: "-", color: "text-gray-500" }
   }
   
-  let difference: number
+  const difference = currentValue - benchmarkValue
   let isBetter: boolean
   
   if (metricType === 'cost') {
-    // Para CPM e CPC: menor é melhor
-    difference = benchmarkValue - currentValue
-    isBetter = difference > 0
+    // Para CPM e CPC: menor é melhor (diferença negativa é melhor)
+    isBetter = difference < 0
   } else {
-    // Para CTR: maior é melhor
-    difference = currentValue - benchmarkValue
+    // Para CTR e VTR: maior é melhor (diferença positiva é melhor)
     isBetter = difference > 0
   }
   
-  const percentage = (difference / benchmarkValue) * 100
-  const sign = percentage > 0 ? "+" : ""
+  const sign = difference > 0 ? "+" : ""
+  const formattedValue = difference.toFixed(2)
   
   return {
-    value: `${sign}${percentage.toFixed(1)}%`,
+    value: `${sign}${formattedValue}`,
     color: isBetter ? "text-green-600" : "text-red-600"
   }
 }
