@@ -8,6 +8,8 @@ export interface BenchmarkData {
   cpm: number
   cpc: number
   ctr: number
+  vtr: number
+  completionRate: number
 }
 
 // Função para buscar dados de benchmark
@@ -74,6 +76,8 @@ export const processBenchmarkData = (apiData: any): Map<string, BenchmarkData> =
           cpm: parseNumber(row[2]), // Coluna CPM
           cpc: parseNumber(row[3]), // Coluna CPC
           ctr: parseNumber(row[7]), // Coluna CTR
+          vtr: parseNumber(row[8]), // Coluna VTR 100%
+          completionRate: parseNumber(row[8]), // Coluna COMPLETION RATE (mesmo que VTR)
         })
       }
     })
