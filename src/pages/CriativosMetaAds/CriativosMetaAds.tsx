@@ -524,11 +524,11 @@ const CriativosMeta: FC = () => {
                 <th className="text-right py-3 px-4 font-semibold min-w-[7.5rem]">Visualizações</th>
                 <th className="text-right py-3 px-4 font-semibold min-w-[7.5rem]">Tx. Engaj.</th>
                 <th className="text-right py-3 px-4 font-semibold min-w-[7.5rem]">CPM</th>
-                <th className="text-right py-3 px-4 font-semibold min-w-[4rem] text-[10px]">Δ CPM</th>
+                <th className="text-right py-3 px-4 font-semibold min-w-[4rem] text-[15px]">Δ CPM</th>
                 <th className="text-right py-3 px-4 font-semibold min-w-[7.5rem]">CPC</th>
-                <th className="text-right py-3 px-4 font-semibold min-w-[4rem] text-[10px]">Δ CPC</th>
+                <th className="text-right py-3 px-4 font-semibold min-w-[4rem] text-[15px]">Δ CPC</th>
                 <th className="text-right py-3 px-4 font-semibold min-w-[7.5rem]">CTR</th>
-                <th className="text-right py-3 px-4 font-semibold min-w-[4rem] text-[10px]">Δ CTR</th>
+                <th className="text-right py-3 px-4 font-semibold min-w-[4rem] text-[15px]">Δ CTR</th>
               </tr>
             </thead>
             <tbody>

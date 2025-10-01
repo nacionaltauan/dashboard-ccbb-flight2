@@ -472,9 +472,9 @@ const CriativosTikTok: React.FC = () => {
                 <th className="text-right py-3 px-4 font-semibold min-w-[7.5rem]">Likes</th>
                 <th className="text-right py-3 px-4 font-semibold min-w-[7.5rem]">Tx. Engaj.</th>
                 <th className="text-right py-3 px-4 font-semibold min-w-[7.5rem]">VTR</th>
+                <th className="text-right py-3 px-4 font-semibold min-w-[4rem] text-[15px]">Δ VTR</th>
                 <th className="text-right py-3 px-4 font-semibold min-w-[7.5rem]">CPM</th>
-                <th className="text-right py-3 px-4 font-semibold min-w-[4rem] text-[10px]">Δ CPM</th>
-                <th className="text-right py-3 px-4 font-semibold min-w-[4rem] text-[10px]">Δ VTR</th>
+                <th className="text-right py-3 px-4 font-semibold min-w-[4rem] text-[15px]">Δ CPM</th>
               </tr>
             </thead>
             <tbody>
@@ -563,12 +563,12 @@ const CriativosTikTok: React.FC = () => {
                     <td className="py-3 px-4 text-right min-w-[7.5rem]">{formatNumber(creative.paidLikes)}</td>
                     <td className="py-3 px-4 text-right min-w-[7.5rem]">{creative.impressions > 0 ? (((creative.paidComments + creative.paidShares + creative.paidFollows + creative.profileVisits) / creative.impressions) * 100).toFixed(2) : 0}%</td>
                     <td className="py-3 px-4 text-right min-w-[7.5rem]">{vtr.toFixed(2)}%</td>
+                    <td className={`py-3 px-4 text-right min-w-[4rem] text-xs font-medium ${vtrVariation.color}`}>
+                      {vtrVariation.value}
+                    </td>
                     <td className="py-3 px-4 text-right min-w-[7.5rem]">{formatCurrency(cpm)}</td>
                     <td className={`py-3 px-4 text-right min-w-[4rem] text-xs font-medium ${cpmVariation.color}`}>
                       {cpmVariation.value}
-                    </td>
-                    <td className={`py-3 px-4 text-right min-w-[4rem] text-xs font-medium ${vtrVariation.color}`}>
-                      {vtrVariation.value}
                     </td>
                   </tr>
                 )
