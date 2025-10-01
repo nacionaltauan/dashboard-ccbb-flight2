@@ -508,6 +508,11 @@ const CriativosMeta: FC = () => {
           <div className="text-sm text-gray-600 mb-1">Frequência</div>
           <div className="text-lg font-bold text-gray-900">{totals.avgFrequency.toFixed(2)}</div>
         </div>
+
+        <div className="card-overlay rounded-lg shadow-lg p-4 text-center">
+          <div className="text-sm text-gray-600 mb-1">Engajamentos</div>
+          <div className="text-lg font-bold text-gray-900">{formatNumber(totals.totalEngagements)}</div>
+        </div>
       </div>
 
       <div className="flex-1 card-overlay rounded-lg shadow-lg p-6">
@@ -522,6 +527,7 @@ const CriativosMeta: FC = () => {
                 <th className="text-right py-3 px-4 font-semibold min-w-[7.5rem]">Alcance</th>
                 <th className="text-right py-3 px-4 font-semibold min-w-[7.5rem]">Cliques</th>
                 <th className="text-right py-3 px-4 font-semibold min-w-[7.5rem]">Visualizações</th>
+                <th className="text-right py-3 px-4 font-semibold min-w-[7.5rem]">Engajamentos</th>
                 <th className="text-right py-3 px-4 font-semibold min-w-[7.5rem]">CPM</th>
                 <th className="text-right py-3 px-4 font-semibold min-w-[4rem]">Δ CPM</th>
                 <th className="text-right py-3 px-4 font-semibold min-w-[7.5rem]">CPC</th>
@@ -568,6 +574,7 @@ const CriativosMeta: FC = () => {
                     <td className="py-3 px-4 text-right min-w-[7.5rem]">{formatNumber(creative.reach)}</td>
                     <td className="py-3 px-4 text-right min-w-[7.5rem]">{formatNumber(creative.clicks)}</td>
                     <td className="py-3 px-4 text-right min-w-[7.5rem]">{formatNumber(creative.videoViews)}</td>
+                    <td className="py-3 px-4 text-right min-w-[7.5rem]">{formatNumber(creative.totalEngagements)}</td>
                     <td className="py-3 px-4 text-right min-w-[7.5rem]">{formatCurrency(creative.cpm)}</td>
                     <td className={`py-3 px-4 text-right min-w-[4rem] text-xs font-medium ${cpmVariation.color}`}>
                       {cpmVariation.value}
