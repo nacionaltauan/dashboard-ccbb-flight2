@@ -104,71 +104,6 @@ const VisaoGeral: React.FC = () => {
     return new Map()
   }, [benchmarkData])
 
-  // Identificar veículos disponíveis nos dados filtrados
-  const availableVehicles = useMemo(() => {
-    const vehicles = new Set<string>()
-    filteredData.forEach((item) => {
-      vehicles.add(item.platform)
-    })
-    return Array.from(vehicles)
-  }, [filteredData])
-
-  // Obter benchmarks para veículos disponíveis
-  const vehicleBenchmarks = useMemo(() => {
-    const benchmarks: Array<{
-      vehicle: string
-      mediaType: string
-      cpm: number
-      cpc: number
-      ctr: number
-      vtr: number
-    }> = []
-
-    availableVehicles.forEach((vehicle) => {
-      // Mapear veículo para chave do benchmark
-      let benchmarkKey = ""
-      if (vehicle === "Meta") {
-        benchmarkKey = "META"
-      } else if (vehicle === "TikTok") {
-        benchmarkKey = "TIK TOK"
-      } else {
-        // Para outros veículos, usar o nome como está
-        benchmarkKey = vehicle.toUpperCase()
-      }
-
-      // Buscar benchmarks para DISPLAY e VÍDEO
-      const displayKey = `${benchmarkKey}_DISPLAY`
-      const videoKey = `${benchmarkKey}_VÍDEO`
-
-      const displayBenchmark = benchmarkMap.get(displayKey)
-      const videoBenchmark = benchmarkMap.get(videoKey)
-
-      if (displayBenchmark) {
-        benchmarks.push({
-          vehicle,
-          mediaType: "DISPLAY",
-          cpm: displayBenchmark.cpm,
-          cpc: displayBenchmark.cpc,
-          ctr: displayBenchmark.ctr,
-          vtr: displayBenchmark.completionRate,
-        })
-      }
-
-      if (videoBenchmark) {
-        benchmarks.push({
-          vehicle,
-          mediaType: "VÍDEO",
-          cpm: videoBenchmark.cpm,
-          cpc: videoBenchmark.cpc,
-          ctr: videoBenchmark.ctr,
-          vtr: videoBenchmark.completionRate,
-        })
-      }
-    })
-
-    return benchmarks
-  }, [availableVehicles, benchmarkMap])
-
   const togglePlatform = (platform: string) => {
     setSelectedPlatforms((prev) => {
       if (prev.includes(platform)) {
@@ -299,6 +234,71 @@ const VisaoGeral: React.FC = () => {
       setFilteredData([])
     }
   }, [processedData, dateRange, selectedPlatforms, selectedPracas])
+
+  // Identificar veículos disponíveis nos dados filtrados
+  const availableVehicles = useMemo(() => {
+    const vehicles = new Set<string>()
+    filteredData.forEach((item) => {
+      vehicles.add(item.platform)
+    })
+    return Array.from(vehicles)
+  }, [filteredData])
+
+  // Obter benchmarks para veículos disponíveis
+  const vehicleBenchmarks = useMemo(() => {
+    const benchmarks: Array<{
+      vehicle: string
+      mediaType: string
+      cpm: number
+      cpc: number
+      ctr: number
+      vtr: number
+    }> = []
+
+    availableVehicles.forEach((vehicle) => {
+      // Mapear veículo para chave do benchmark
+      let benchmarkKey = ""
+      if (vehicle === "Meta") {
+        benchmarkKey = "META"
+      } else if (vehicle === "TikTok") {
+        benchmarkKey = "TIK TOK"
+      } else {
+        // Para outros veículos, usar o nome como está
+        benchmarkKey = vehicle.toUpperCase()
+      }
+
+      // Buscar benchmarks para DISPLAY e VÍDEO
+      const displayKey = `${benchmarkKey}_DISPLAY`
+      const videoKey = `${benchmarkKey}_VÍDEO`
+
+      const displayBenchmark = benchmarkMap.get(displayKey)
+      const videoBenchmark = benchmarkMap.get(videoKey)
+
+      if (displayBenchmark) {
+        benchmarks.push({
+          vehicle,
+          mediaType: "DISPLAY",
+          cpm: displayBenchmark.cpm,
+          cpc: displayBenchmark.cpc,
+          ctr: displayBenchmark.ctr,
+          vtr: displayBenchmark.completionRate,
+        })
+      }
+
+      if (videoBenchmark) {
+        benchmarks.push({
+          vehicle,
+          mediaType: "VÍDEO",
+          cpm: videoBenchmark.cpm,
+          cpc: videoBenchmark.cpc,
+          ctr: videoBenchmark.ctr,
+          vtr: videoBenchmark.completionRate,
+        })
+      }
+    })
+
+    return benchmarks
+  }, [availableVehicles, benchmarkMap])
 
   // Calcular métricas por plataforma
   const platformMetrics = useMemo(() => {
