@@ -43,7 +43,7 @@ const CriativosTikTok: React.FC = () => {
   const { data: apiData, loading, error } = useTikTokNacionalData()
   const [processedData, setProcessedData] = useState<CreativeData[]>([])
   const [dateRange, setDateRange] = useState<{ start: string; end: string }>({ start: "", end: "" })
-  const [selectedPraca, setSelectedPraca] = useState<string>("")
+  const [selectedPracas, setSelectedPracas] = useState<string[]>([])
   const [availablePracas, setAvailablePracas] = useState<string[]>([])
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage] = useState(10)
@@ -172,6 +172,15 @@ const CriativosTikTok: React.FC = () => {
     return null
   }
 
+  const togglePraca = (praca: string) => {
+    setSelectedPracas((prev) => {
+      if (prev.includes(praca)) {
+        return prev.filter((p) => p !== praca)
+      }
+      return [...prev, praca]
+    })
+  }
+
   // 3. ATUALIZAÇÃO DA LÓGICA DE FILTRAGEM
   const filteredData = useMemo(() => {
     let filtered = processedData
@@ -187,10 +196,10 @@ const CriativosTikTok: React.FC = () => {
     }
 
     // Filtro por praça
-    if (selectedPraca) {
+    if (selectedPracas.length > 0) {
       filtered = filtered.filter((item) => {
         const detectedPraca = detectPracaFromCreative(item.adName)
-        return detectedPraca === selectedPraca
+        return detectedPraca && selectedPracas.includes(detectedPraca)
       })
     }
 
@@ -230,7 +239,7 @@ const CriativosTikTok: React.FC = () => {
     finalData.sort((a, b) => b.cost - a.cost)
 
     return finalData
-  }, [processedData, dateRange, selectedPraca])
+  }, [processedData, dateRange, selectedPracas])
 
   const paginatedData = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage
@@ -364,20 +373,23 @@ const CriativosTikTok: React.FC = () => {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
               <MapPin className="w-4 h-4 mr-2" />
-              Praça
+              Praças
             </label>
-            <select
-              value={selectedPraca}
-              onChange={(e) => setSelectedPraca(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm"
-            >
-              <option value="">Todas as praças</option>
+            <div className="flex flex-wrap gap-2">
               {availablePracas.map((praca) => (
-                <option key={praca} value={praca}>
+                <button
+                  key={praca}
+                  onClick={() => togglePraca(praca)}
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors duration-200 ${
+                    selectedPracas.includes(praca)
+                      ? "bg-pink-100 text-pink-800 border border-pink-300"
+                      : "bg-gray-100 text-gray-600 border border-gray-300 hover:bg-gray-200"
+                  }`}
+                >
                   {praca}
-                </option>
+                </button>
               ))}
-            </select>
+            </div>
           </div>
 
         </div>
