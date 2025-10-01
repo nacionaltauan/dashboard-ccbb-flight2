@@ -77,13 +77,10 @@ const CriativosMeta: FC = () => {
     const loadMedias = async () => {
       setMediasLoading(true)
       try {
-        console.log("🔍 [DEBUG] Iniciando carregamento de mídias Meta...")
         const mediaMap = await googleDriveApi.getPlatformImages("meta")
-        console.log("📊 [DEBUG] Mídias carregadas:", mediaMap.size, "arquivos encontrados")
-        console.log("📋 [DEBUG] Lista de mídias:", Array.from(mediaMap.entries()))
         setCreativeMedias(mediaMap)
       } catch (error) {
-        console.error("❌ [DEBUG] Error loading Meta medias:", error)
+        console.error("Error loading Meta medias:", error)
       } finally {
         setMediasLoading(false)
       }
@@ -380,14 +377,13 @@ const CriativosMeta: FC = () => {
             <PDFDownloadButton contentRef={contentRef} fileName="criativos-meta" />
             <button
               onClick={async () => {
-                console.log("🔄 [DEBUG] Forçando recarregamento de mídias...")
                 setMediasLoading(true)
                 try {
+                  googleDriveApi.clearPlatformCache("meta")
                   const mediaMap = await googleDriveApi.getPlatformImages("meta")
-                  console.log("📊 [DEBUG] Mídias recarregadas:", mediaMap.size, "arquivos")
                   setCreativeMedias(mediaMap)
                 } catch (error) {
-                  console.error("❌ [DEBUG] Erro ao recarregar:", error)
+                  console.error("Erro ao recarregar mídias:", error)
                 } finally {
                   setMediasLoading(false)
                 }
@@ -512,7 +508,6 @@ const CriativosMeta: FC = () => {
             <tbody>
               {paginatedData.map((creative, index) => {
                 const mediaData = googleDriveApi.findMediaForCreative(creative.creativeTitle, creativeMedias)
-                console.log(`🔍 [DEBUG] Criativo: "${creative.creativeTitle}" -> Mídia encontrada:`, mediaData)
 
                 return (
                   <tr key={index} className={index % 2 === 0 ? "bg-blue-50" : "bg-white"}>

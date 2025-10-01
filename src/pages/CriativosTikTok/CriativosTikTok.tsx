@@ -59,13 +59,10 @@ const CriativosTikTok: React.FC = () => {
     const loadMedias = async () => {
       setMediasLoading(true)
       try {
-        console.log("🔍 [DEBUG] Iniciando carregamento de mídias TikTok...")
         const mediaMap = await googleDriveApi.getPlatformImages("tiktok")
-        console.log("📊 [DEBUG] Mídias carregadas:", mediaMap.size, "arquivos encontrados")
-        console.log("📋 [DEBUG] Lista de mídias:", Array.from(mediaMap.entries()))
         setCreativeMedias(mediaMap)
       } catch (error) {
-        console.error("❌ [DEBUG] Error loading TikTok medias:", error)
+        console.error("Error loading TikTok medias:", error)
       } finally {
         setMediasLoading(false)
       }
@@ -347,14 +344,13 @@ const CriativosTikTok: React.FC = () => {
             <PDFDownloadButton contentRef={contentRef} fileName="criativos-tiktok" />
             <button
               onClick={async () => {
-                console.log("🔄 [DEBUG] Forçando recarregamento de mídias TikTok...")
                 setMediasLoading(true)
                 try {
+                  googleDriveApi.clearPlatformCache("tiktok")
                   const mediaMap = await googleDriveApi.getPlatformImages("tiktok")
-                  console.log("📊 [DEBUG] Mídias TikTok recarregadas:", mediaMap.size, "arquivos")
                   setCreativeMedias(mediaMap)
                 } catch (error) {
-                  console.error("❌ [DEBUG] Erro ao recarregar TikTok:", error)
+                  console.error("Erro ao recarregar mídias TikTok:", error)
                 } finally {
                   setMediasLoading(false)
                 }
