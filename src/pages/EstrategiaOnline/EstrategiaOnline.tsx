@@ -2,12 +2,13 @@
 
 import type React from "react"
 import { useState, useEffect, useMemo, useRef } from "react"
-import { Globe, BarChart3, Tv, Smartphone, Monitor, Eye, Play, MousePointer, Users, Calendar } from "lucide-react"
+import { Globe, BarChart3, Tv, Smartphone, Monitor, Eye, Play, MousePointer, Users, Calendar, MapPin } from "lucide-react"
 import { useEstrategiaOnlineData } from "../../services/api"
 import PDFDownloadButton from "../../components/PDFDownloadButton/PDFDownloadButton"
 import Loading from "../../components/Loading/Loading"
 
 interface VehicleData {
+  praca: string
   veiculo: string
   mes: string
   custoInvestido: number
@@ -30,6 +31,7 @@ interface CampaignSummary {
 }
 
 interface AggregatedVehicleData {
+  praca: string
   veiculo: string
   custoInvestido: number
   custoPrevisto: number
@@ -45,6 +47,8 @@ const EstrategiaOnline: React.FC = () => {
   const [mesesTotals, setMesesTotals] = useState<MesTotals[]>([])
   const [selectedMes, setSelectedMes] = useState<string | null>(null)
   const [availableMeses, setAvailableMeses] = useState<string[]>([])
+  const [selectedPracas, setSelectedPracas] = useState<string[]>([])
+  const [availablePracas, setAvailablePracas] = useState<string[]>([])
   const [campaignSummary, setCampaignSummary] = useState<CampaignSummary>({
     totalInvestimentoPrevisto: 0,
     totalCustoInvestido: 0,
@@ -107,15 +111,16 @@ const EstrategiaOnline: React.FC = () => {
 
       const processed: VehicleData[] = rows
         .map((row: any[]) => {
-          const custoInvestido = parseMonetaryValue(row[2]) // Coluna "Custo Investido"
-          const custoPrevisto = parseMonetaryValue(row[3]) // Coluna "Custo Previsto"
+          const custoInvestido = parseMonetaryValue(row[3]) // Coluna "Custo Investido" (D)
+          const custoPrevisto = parseMonetaryValue(row[4]) // Coluna "Custo Previsto" (E)
 
           return {
-            veiculo: row[0] || "", // Primeira coluna (Veículo)
-            mes: row[1] || "", // Segunda coluna (MÊS)
+            praca: row[0] || "", // Primeira coluna (Praça)
+            veiculo: row[1] || "", // Segunda coluna (Veículo)
+            mes: row[2] || "", // Terceira coluna (MÊS)
             custoInvestido,
             custoPrevisto,
-            tipoCompra: row[4] || "", // Quinta coluna (Tipo de Compra)
+            tipoCompra: row[5] || "", // Sexta coluna (Tipo de Compra)
           }
         })
         .filter((vehicle: VehicleData) => vehicle.veiculo && vehicle.mes)
@@ -149,6 +154,12 @@ const EstrategiaOnline: React.FC = () => {
         .sort()
       setAvailableMeses(meses)
 
+      // Extrair praças únicas
+      const pracas = Array.from(new Set(processed.map((item) => item.praca)))
+        .filter(Boolean)
+        .sort()
+      setAvailablePracas(pracas)
+
       // Calcular resumo da campanha
       const totalGeralPrevisto = processed.reduce((sum, v) => sum + v.custoPrevisto, 0)
       const totalGeralInvestido = processed.reduce((sum, v) => sum + v.custoInvestido, 0)
@@ -166,13 +177,20 @@ const EstrategiaOnline: React.FC = () => {
 
   // Dados agregados por veículo para a tabela
   const aggregatedVehicleData = useMemo(() => {
-    const filteredData = selectedMes ? vehicleData.filter((vehicle) => vehicle.mes === selectedMes) : vehicleData
+    let filteredData = selectedMes ? vehicleData.filter((vehicle) => vehicle.mes === selectedMes) : vehicleData
+    
+    // Aplicar filtro de praça
+    if (selectedPracas.length > 0) {
+      filteredData = filteredData.filter((vehicle) => selectedPracas.includes(vehicle.praca))
+    }
 
     const aggregated: Record<string, AggregatedVehicleData> = {}
 
     filteredData.forEach((vehicle) => {
-      if (!aggregated[vehicle.veiculo]) {
-        aggregated[vehicle.veiculo] = {
+      const key = `${vehicle.praca}_${vehicle.veiculo}`
+      if (!aggregated[key]) {
+        aggregated[key] = {
+          praca: vehicle.praca,
           veiculo: vehicle.veiculo,
           custoInvestido: 0,
           custoPrevisto: 0,
@@ -182,8 +200,8 @@ const EstrategiaOnline: React.FC = () => {
         }
       }
 
-      aggregated[vehicle.veiculo].custoInvestido += vehicle.custoInvestido
-      aggregated[vehicle.veiculo].custoPrevisto += vehicle.custoPrevisto
+      aggregated[key].custoInvestido += vehicle.custoInvestido
+      aggregated[key].custoPrevisto += vehicle.custoPrevisto
     })
 
     // Calcular pacing e shares
@@ -195,7 +213,7 @@ const EstrategiaOnline: React.FC = () => {
     })
 
     return Object.values(aggregated).sort((a, b) => b.custoPrevisto - a.custoPrevisto)
-  }, [vehicleData, selectedMes])
+  }, [vehicleData, selectedMes, selectedPracas])
 
   // Calcular totais filtrados
   const filteredTotals = useMemo(() => {
@@ -223,6 +241,15 @@ const EstrategiaOnline: React.FC = () => {
       return `${(value / 1000).toFixed(1)} mil`
     }
     return value.toLocaleString("pt-BR")
+  }
+
+  const togglePraca = (praca: string) => {
+    setSelectedPracas((prev) => {
+      if (prev.includes(praca)) {
+        return prev.filter((p) => p !== praca)
+      }
+      return [...prev, praca]
+    })
   }
 
   if (loading) {
@@ -259,6 +286,33 @@ const EstrategiaOnline: React.FC = () => {
         <div className="flex items-center space-x-4 text-sm text-gray-600 bg-white/80 backdrop-blur-sm px-3 py-1 rounded-lg">
           <PDFDownloadButton contentRef={contentRef} fileName="estrategia-online" />
           <span>Última atualização: {new Date().toLocaleString("pt-BR")}</span>
+        </div>
+      </div>
+
+      {/* Filtro de Praça */}
+      <div className="card-overlay rounded-lg shadow-lg p-4">
+        <div className="flex items-center space-x-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+              <MapPin className="w-4 h-4 mr-2" />
+              Praças
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {availablePracas.map((praca) => (
+                <button
+                  key={praca}
+                  onClick={() => togglePraca(praca)}
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors duration-200 ${
+                    selectedPracas.includes(praca)
+                      ? "bg-blue-100 text-blue-800 border border-blue-300"
+                      : "bg-gray-100 text-gray-600 border border-gray-300 hover:bg-gray-200"
+                  }`}
+                >
+                  {praca}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -381,16 +435,20 @@ const EstrategiaOnline: React.FC = () => {
           <table className="w-full table-fixed">
             <thead>
               <tr className="border-b border-gray-200">
-                <th className="text-left py-3 px-4 font-semibold text-gray-700 w-[20%]">Veículo</th>
+                <th className="text-left py-3 px-4 font-semibold text-gray-700 w-[15%]">Praça</th>
+                <th className="text-left py-3 px-4 font-semibold text-gray-700 w-[15%]">Veículo</th>
                 <th className="text-right py-3 px-4 font-semibold text-gray-700 w-[18%]">Investimento Previsto</th>
                 <th className="text-center py-3 px-4 font-semibold text-gray-700 w-[12%]">Share (%)</th>
                 <th className="text-right py-3 px-4 font-semibold text-gray-700 w-[18%]">Custo Realizado</th>
-                <th className="text-center py-3 px-4 font-semibold text-gray-700 w-[32%]">Pacing</th>
+                <th className="text-center py-3 px-4 font-semibold text-gray-700 w-[22%]">Pacing</th>
               </tr>
             </thead>
             <tbody>
               {aggregatedVehicleData.map((vehicle, index) => (
                 <tr key={index} className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors">
+                  <td className="py-4 px-4">
+                    <span className="font-medium text-gray-900">{vehicle.praca}</span>
+                  </td>
                   <td className="py-4 px-4">
                     <div className="flex items-center space-x-3">
                       <div
@@ -450,6 +508,7 @@ const EstrategiaOnline: React.FC = () => {
             </tbody>
             <tfoot>
               <tr className="border-t-2 border-gray-300 bg-gray-50/50">
+                <td className="py-4 px-4 font-bold text-gray-900">-</td>
                 <td className="py-4 px-4 font-bold text-gray-900">Total</td>
                 <td className="py-4 px-4 text-right font-bold text-gray-900">
                   {formatCurrency(filteredTotals.totalPrevisto)}
