@@ -278,10 +278,10 @@ const VisaoGeral: React.FC = () => {
         benchmarks.push({
           vehicle,
           mediaType: "DISPLAY",
-          cpm: displayBenchmark.cpm,
-          cpc: displayBenchmark.cpc,
-          ctr: displayBenchmark.ctr,
-          vtr: displayBenchmark.completionRate,
+          cpm: displayBenchmark.cpm || 0,
+          cpc: displayBenchmark.cpc || 0,
+          ctr: displayBenchmark.ctr || 0,
+          vtr: displayBenchmark.completionRate || 0,
         })
       }
 
@@ -289,10 +289,10 @@ const VisaoGeral: React.FC = () => {
         benchmarks.push({
           vehicle,
           mediaType: "VÍDEO",
-          cpm: videoBenchmark.cpm,
-          cpc: videoBenchmark.cpc,
-          ctr: videoBenchmark.ctr,
-          vtr: videoBenchmark.completionRate,
+          cpm: videoBenchmark.cpm || 0,
+          cpc: videoBenchmark.cpc || 0,
+          ctr: videoBenchmark.ctr || 0,
+          vtr: videoBenchmark.completionRate || 0,
         })
       }
     })
@@ -523,25 +523,25 @@ const VisaoGeral: React.FC = () => {
                     <div className="text-center">
                       <div className="text-gray-500">CPM</div>
                       <div className="font-semibold text-blue-600">
-                        {formatCurrency(benchmark.cpm)}
+                        {formatCurrency(benchmark.cpm || 0)}
                       </div>
                     </div>
                     <div className="text-center">
                       <div className="text-gray-500">CPC</div>
                       <div className="font-semibold text-green-600">
-                        {formatCurrency(benchmark.cpc)}
+                        {formatCurrency(benchmark.cpc || 0)}
                       </div>
                     </div>
                     <div className="text-center">
                       <div className="text-gray-500">CTR</div>
                       <div className="font-semibold text-purple-600">
-                        {benchmark.ctr.toFixed(2)}%
+                        {(benchmark.ctr || 0).toFixed(2)}%
                       </div>
                     </div>
                     <div className="text-center">
                       <div className="text-gray-500">VTR</div>
                       <div className="font-semibold text-orange-600">
-                        {benchmark.vtr.toFixed(2)}%
+                        {(benchmark.vtr || 0).toFixed(2)}%
                       </div>
                     </div>
                   </div>
