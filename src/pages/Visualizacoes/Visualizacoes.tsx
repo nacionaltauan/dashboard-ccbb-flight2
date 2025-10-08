@@ -54,6 +54,7 @@ interface PlatformMetrics {
   visualizacoesPercentage: number
   tiposCompra: string[]
   pracas: string[]
+  tipoFormato: string
 }
 
 const Visualizacoes: React.FC = () => {
@@ -232,17 +233,17 @@ const Visualizacoes: React.FC = () => {
             } as ProcessedData
           })
           .filter((item: ProcessedData) => {
-            // Filtrar apenas dados com impressões e que tenham dados de vídeo
+            // Filtrar apenas dados com impressões e que tenham dados de vídeo ou áudio
             return (
               item.date &&
               item.impressions > 0 &&
-              (item.videoViews > 0 || item.videoCompletions > 0) && // Deve ter pelo menos uma métrica de vídeo
+              (item.videoViews > 0 || item.videoCompletions > 0) && // Deve ter pelo menos uma métrica de vídeo/áudio
               item.platform &&
-              item.tipoFormato === "Vídeo" // Apenas vídeos para esta página
+              (item.tipoFormato === "Vídeo" || item.tipoFormato === "Audio") // Vídeos e áudios para esta página
             )
           })
 
-        console.log("Dados processados (vídeo):", processed.length)
+        console.log("Dados processados (vídeo/áudio):", processed.length)
         console.log("Amostra dos dados:", processed.slice(0, 3))
         setProcessedData(processed)
 
@@ -371,6 +372,7 @@ const Visualizacoes: React.FC = () => {
           visualizacoesPercentage: 0,
           tiposCompra: [],
           pracas: [],
+          tipoFormato: item.tipoFormato,
         }
       }
 
@@ -500,7 +502,7 @@ const Visualizacoes: React.FC = () => {
           <h3 className="text-xl font-semibold text-gray-900">Curva de Retenção por Veículo</h3>
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 max-w-md">
             <div className="text-sm text-blue-800">
-              <strong>VTR (Video Through Rate):</strong> Percentual de pessoas que assistiram o vídeo completo em
+              <strong>VTR/LTR (Video/Listen Through Rate):</strong> Percentual de pessoas que consumiram o conteúdo completo (vídeo ou áudio) em
               relação ao total de impressões.
             </div>
           </div>
@@ -554,7 +556,9 @@ const Visualizacoes: React.FC = () => {
                     <h4 className="font-semibold text-gray-900">{platform.platform}</h4>
                   </div>
                   <div className="text-right">
-                    <div className="text-sm text-gray-600">VTR</div>
+                    <div className="text-sm text-gray-600">
+                      {platform.tipoFormato === "Audio" ? "LTR" : "VTR"}
+                    </div>
                     <div className="text-lg font-bold" style={{ color: platform.color }}>
                       {platform.vtr100.toFixed(2)}%
                     </div>
@@ -622,7 +626,9 @@ const Visualizacoes: React.FC = () => {
 
                 <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
                   <div>
-                    <span className="font-medium">Total Views:</span> {formatNumber(platform.videoViews)}
+                    <span className="font-medium">
+                      {platform.tipoFormato === "Audio" ? "Total Listens:" : "Total Views:"}
+                    </span> {formatNumber(platform.videoViews)}
                   </div>
                   <div>
                     <span className="font-medium">Completions:</span> {formatNumber(platform.videoCompletions)}
@@ -643,17 +649,16 @@ const Visualizacoes: React.FC = () => {
           <h4 className="font-semibold text-gray-900 mb-2">Como interpretar a curva de retenção:</h4>
           <div className="text-sm text-gray-700 space-y-1">
             <p>
-              • <strong>Início (0%):</strong> 100% das pessoas que começaram a assistir o vídeo
+              • <strong>Início (0%):</strong> 100% das pessoas que começaram a assistir ou escutar a peça
             </p>
             <p>
-              • <strong>25%, 50%, 75%:</strong> Percentual de pessoas que continuaram assistindo até esse ponto
+              • <strong>25%, 50%, 75%:</strong> Percentual de pessoas que continuaram consumindo até esse ponto
             </p>
             <p>
-              • <strong>100%:</strong> Percentual de pessoas que assistiram o vídeo completo
+              • <strong>100%:</strong> Percentual de pessoas que consumiram a peça completa (áudio ou vídeo)
             </p>
             <p>
-              • <strong>VTR:</strong> Video Through Rate - percentual de visualizações completas em relação às
-              impressões totais
+              • <strong>VTR/LTR:</strong> Video Through Rate/Listen Through Rate - percentual de visualizações ou escutas completas em relação às impressões totais
             </p>
           </div>
         </div>
@@ -705,7 +710,7 @@ const Visualizacoes: React.FC = () => {
   }
 
   if (loading) {
-    return <Loading message="Carregando dados de visualizações..." />
+    return <Loading message="Carregando dados de retenção..." />
   }
 
   if (error) {
@@ -719,7 +724,7 @@ const Visualizacoes: React.FC = () => {
   if (processedData.length === 0) {
     return (
       <div className="bg-yellow-50/90 backdrop-blur-sm border border-yellow-200 rounded-lg p-4">
-        <p className="text-yellow-800">Nenhum dado de visualização de vídeo encontrado no período selecionado.</p>
+        <p className="text-yellow-800">Nenhum dado de retenção de vídeo ou áudio encontrado no período selecionado.</p>
       </div>
     )
   }
@@ -733,8 +738,8 @@ const Visualizacoes: React.FC = () => {
             <Play className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 text-enhanced">Visualizações</h1>
-            <p className="text-gray-600">Análise de visualizações de vídeo</p>
+            <h1 className="text-3xl font-bold text-gray-900 text-enhanced">Análise de Retenção</h1>
+            <p className="text-gray-600">Análise de retenção de vídeo e áudio</p>
           </div>
         </div>
         <div className="flex items-center space-x-4 text-sm text-gray-600 bg-white/80 backdrop-blur-sm px-3 py-1 rounded-lg">

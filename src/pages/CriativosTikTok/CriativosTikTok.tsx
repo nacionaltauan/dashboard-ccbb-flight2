@@ -9,7 +9,6 @@ import { googleDriveApi } from "../../services/googleDriveApi"
 import PDFDownloadButton from "../../components/PDFDownloadButton/PDFDownloadButton"
 import MediaThumbnail from "../../components/MediaThumbnail/MediaThumbnail" // Importe o novo componente
 import TikTokCreativeModal from "./components/TikTokCreativeModal" // Importe o modal
-import { useBenchmarkNacionalData, processBenchmarkData, calculateVariation } from "../../services/benchmarkApi"
 
 interface CreativeData {
   date: string
@@ -42,7 +41,6 @@ interface CreativeData {
 const CriativosTikTok: React.FC = () => {
   const contentRef = useRef<HTMLDivElement>(null)
   const { data: apiData, loading, error } = useTikTokNacionalData()
-  const { data: benchmarkData, loading: benchmarkLoading } = useBenchmarkNacionalData()
   const [processedData, setProcessedData] = useState<CreativeData[]>([])
   const [dateRange, setDateRange] = useState<{ start: string; end: string }>({ start: "", end: "" })
   const [selectedPracas, setSelectedPracas] = useState<string[]>([])
@@ -56,26 +54,6 @@ const CriativosTikTok: React.FC = () => {
 
   const [selectedCreative, setSelectedCreative] = useState<CreativeData | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
-
-  // Processar dados de benchmark
-  const benchmarkMap = useMemo(() => {
-    if (benchmarkData?.data) {
-      return processBenchmarkData(benchmarkData.data)
-    }
-    return new Map()
-  }, [benchmarkData])
-
-  // Função para determinar se é vídeo ou display
-  const getMediaType = (creative: CreativeData): string => {
-    return creative.videoViews > 0 || creative.videoViews100 > 0 ? "VÍDEO" : "DISPLAY"
-  }
-
-  // Função para obter dados de benchmark
-  const getBenchmarkData = (creative: CreativeData) => {
-    const mediaType = getMediaType(creative)
-    const key = `TIK TOK_${mediaType}`
-    return benchmarkMap.get(key)
-  }
 
   useEffect(() => {
     const loadMedias = async () => {
@@ -280,7 +258,6 @@ const CriativosTikTok: React.FC = () => {
       videoViews: filteredData.reduce((sum, item) => sum + item.videoViews, 0),
       videoViews100: filteredData.reduce((sum, item) => sum + item.videoViews100, 0),
       paidLikes: filteredData.reduce((sum, item) => sum + item.paidLikes, 0),
-      totalEngagements: filteredData.reduce((sum, item) => sum + item.paidComments + item.paidShares + item.paidFollows + item.profileVisits, 0),
       avgCpm: 0,
       avgCpc: 0,
       avgFrequency: 0,
@@ -365,23 +342,6 @@ const CriativosTikTok: React.FC = () => {
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-4 text-sm text-gray-600 bg-white/80 backdrop-blur-sm px-3 py-1 rounded-lg">
             <PDFDownloadButton contentRef={contentRef} fileName="criativos-tiktok" />
-            <button
-              onClick={async () => {
-                setMediasLoading(true)
-                try {
-                  googleDriveApi.clearPlatformCache("tiktok")
-                  const mediaMap = await googleDriveApi.getPlatformImages("tiktok")
-                  setCreativeMedias(mediaMap)
-                } catch (error) {
-                  console.error("Erro ao recarregar mídias TikTok:", error)
-                } finally {
-                  setMediasLoading(false)
-                }
-              }}
-              className="px-3 py-1 bg-pink-500 text-white rounded text-sm hover:bg-pink-600"
-            >
-              🔄 Recarregar Mídias
-            </button>
             <span>Última atualização: {new Date().toLocaleString("pt-BR")}</span>
           </div>
         </div>
@@ -450,11 +410,6 @@ const CriativosTikTok: React.FC = () => {
           <div className="text-sm text-gray-600 mb-1">VTR</div>
           <div className="text-lg font-bold text-gray-900">{totals.vtr.toFixed(2)}%</div>
         </div>
-
-        <div className="card-overlay rounded-lg shadow-lg p-4 text-center">
-          <div className="text-sm text-gray-600 mb-1">Tx. Engaj.</div>
-          <div className="text-lg font-bold text-gray-900">{totals.impressions > 0 ? ((totals.totalEngagements / totals.impressions) * 100).toFixed(2) : 0}%</div>
-        </div>
       </div>
 
       <div className="flex-1 card-overlay rounded-lg shadow-lg p-6">
@@ -470,11 +425,7 @@ const CriativosTikTok: React.FC = () => {
                 <th className="text-right py-3 px-4 font-semibold min-w-[7.5rem]">Cliques</th>
                 <th className="text-right py-3 px-4 font-semibold min-w-[7.5rem]">Views 100%</th>
                 <th className="text-right py-3 px-4 font-semibold min-w-[7.5rem]">Likes</th>
-                <th className="text-right py-3 px-4 font-semibold min-w-[7.5rem]">Tx. Engaj.</th>
                 <th className="text-right py-3 px-4 font-semibold min-w-[7.5rem]">VTR</th>
-                <th className="text-right py-3 px-4 font-semibold min-w-[4rem] text-[15px]">Δ VTR</th>
-                <th className="text-right py-3 px-4 font-semibold min-w-[7.5rem]">CPM</th>
-                <th className="text-right py-3 px-4 font-semibold min-w-[4rem] text-[15px]">Δ CPM</th>
               </tr>
             </thead>
             <tbody>
@@ -482,14 +433,6 @@ const CriativosTikTok: React.FC = () => {
                 const vtr = creative.impressions > 0 ? (creative.videoViews100 / creative.impressions) * 100 : 0
                 const driveMediaData = googleDriveApi.findMediaForCreative(creative.adName, creativeMedias)
                 const tiktokThumbnail = creative.videoThumbnailUrl
-                const benchmark = getBenchmarkData(creative)
-                
-                // Calcular métricas para comparação
-                const cpm = creative.impressions > 0 ? (creative.cost / creative.impressions) * 1000 : 0
-                
-                // Calcular variações
-                const cpmVariation = benchmark ? calculateVariation(cpm, benchmark.cpm, 'cost') : { value: "-", color: "text-gray-500" }
-                const vtrVariation = benchmark ? calculateVariation(vtr, benchmark.ctr, 'performance') : { value: "-", color: "text-gray-500" }
 
                 return (
                   <tr key={index} className={index % 2 === 0 ? "bg-pink-50" : "bg-white"}>
@@ -561,15 +504,7 @@ const CriativosTikTok: React.FC = () => {
                     <td className="py-3 px-4 text-right min-w-[7.5rem]">{formatNumber(creative.clicks)}</td>
                     <td className="py-3 px-4 text-right min-w-[7.5rem]">{formatNumber(creative.videoViews100)}</td>
                     <td className="py-3 px-4 text-right min-w-[7.5rem]">{formatNumber(creative.paidLikes)}</td>
-                    <td className="py-3 px-4 text-right min-w-[7.5rem]">{creative.impressions > 0 ? (((creative.paidComments + creative.paidShares + creative.paidFollows + creative.profileVisits) / creative.impressions) * 100).toFixed(2) : 0}%</td>
                     <td className="py-3 px-4 text-right min-w-[7.5rem]">{vtr.toFixed(2)}%</td>
-                    <td className={`py-3 px-4 text-right min-w-[4rem] text-xs font-medium ${vtrVariation.color}`}>
-                      {vtrVariation.value}
-                    </td>
-                    <td className="py-3 px-4 text-right min-w-[7.5rem]">{formatCurrency(cpm)}</td>
-                    <td className={`py-3 px-4 text-right min-w-[4rem] text-xs font-medium ${cpmVariation.color}`}>
-                      {cpmVariation.value}
-                    </td>
                   </tr>
                 )
               })}
