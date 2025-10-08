@@ -229,7 +229,8 @@ const Visualizacoes: React.FC = () => {
               vtr100: impressions > 0 && videoCompletions > 0 ? (videoCompletions / impressions) * 100 : 0,
               tipoCompra: tipoCompra,
               praca: praca,
-              tipoFormato: item["video_estatico_audio"] === "Video" ? "Vídeo" : "Estático",
+              tipoFormato: item["video_estatico_audio"] === "Video" ? "Vídeo" : 
+                          item["video_estatico_audio"] === "Audio" ? "Audio" : "Estático",
             } as ProcessedData
           })
           .filter((item: ProcessedData) => {
@@ -245,6 +246,11 @@ const Visualizacoes: React.FC = () => {
 
         console.log("Dados processados (vídeo/áudio):", processed.length)
         console.log("Amostra dos dados:", processed.slice(0, 3))
+        
+        // Debug específico para Spotify
+        const spotifyData = processed.filter(item => item.platform === "Spotify")
+        console.log("Dados do Spotify:", spotifyData)
+        console.log("Total de registros Spotify:", spotifyData.length)
         setProcessedData(processed)
 
         // Definir range de datas inicial
@@ -270,6 +276,8 @@ const Visualizacoes: React.FC = () => {
           }
         })
         const platforms = Array.from(platformSet).filter(Boolean)
+        console.log("Plataformas disponíveis:", platforms)
+        console.log("Spotify está nas plataformas?", platforms.includes("Spotify"))
         setAvailablePlatforms(platforms)
         setSelectedPlatforms([])
 
@@ -375,6 +383,16 @@ const Visualizacoes: React.FC = () => {
           tipoFormato: item.tipoFormato,
         }
       }
+      
+      // Debug específico para Spotify
+      if (item.platform === "Spotify") {
+        console.log("Processando item Spotify:", {
+          creativeTitle: item.campaignName,
+          videoViews: item.videoViews,
+          videoCompletions: item.videoCompletions,
+          tipoFormato: item.tipoFormato
+        })
+      }
 
       metrics[item.platform].impressions += item.impressions
       metrics[item.platform].cost += item.cost
@@ -420,7 +438,10 @@ const Visualizacoes: React.FC = () => {
       }
     })
 
-    return Object.values(metrics).sort((a, b) => b.cost - a.cost)
+    const result = Object.values(metrics).sort((a, b) => b.cost - a.cost)
+    console.log("Métricas finais calculadas:", result.map(m => m.platform))
+    console.log("Spotify nas métricas finais?", result.some(m => m.platform === "Spotify"))
+    return result
   }, [filteredData, platformColors])
 
   // Calcular totais
