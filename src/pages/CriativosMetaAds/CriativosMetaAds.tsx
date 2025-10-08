@@ -142,7 +142,106 @@ const CriativosMeta: FC = () => {
   // Processar dados não tratados (Meta Não Tratado)
   useEffect(() => {
     console.log("API Data Untreated:", apiDataUntreated)
-    if (apiDataUntreated?.values) {
+    console.log("API Data Untreated structure:", apiDataUntreated?.data)
+    
+    // Verificar se os dados estão em apiDataUntreated.data.values
+    if (apiDataUntreated?.data?.values) {
+      console.log("Dados encontrados em apiDataUntreated.data.values")
+      const headers = apiDataUntreated.data.values[0]
+      const rows = apiDataUntreated.data.values.slice(1)
+      console.log("Headers Untreated (data.values):", headers)
+      console.log("Rows count Untreated (data.values):", rows.length)
+      console.log("Primeira linha de dados (data.values):", rows[0])
+      
+      // Processar dados da estrutura data.values
+      const processed: CreativeDataUntreated[] = rows
+        .map((row: string[]) => {
+          const parseNumber = (value: string) => {
+            if (!value || value === "") return 0
+            return Number.parseFloat(value.replace(/[R$\s.]/g, "").replace(",", ".")) || 0
+          }
+
+          const parseInteger = (value: string) => {
+            if (!value || value === "") return 0
+            return Number.parseInt(value.replace(/[.\s]/g, "").replace(",", "")) || 0
+          }
+
+          const date = row[headers.indexOf("A")] || "" // Date - A
+          const campaignName = row[headers.indexOf("B")] || "" // Campaign name - B
+          const creativeTitle = row[headers.indexOf("D")] || "" // Creative title - D
+          const reach = parseInteger(row[headers.indexOf("M")]) // Reach - M
+          const impressions = parseInteger(row[headers.indexOf("N")]) // Impressions - N
+          const clicks = parseInteger(row[headers.indexOf("Q")]) // Clicks - Q
+          const totalSpent = parseNumber(row[headers.indexOf("AF")]) // Total spent - AF
+          const videoViews = parseInteger(row[headers.indexOf("X")]) // Video views - X
+          const videoViews25 = parseInteger(row[headers.indexOf("Z")]) // Video views at 25% - Z
+          const videoViews50 = parseInteger(row[headers.indexOf("AA")]) // Video views at 50% - AA
+          const videoViews75 = parseInteger(row[headers.indexOf("AB")]) // Video views at 75% - AB
+          const videoCompletions = parseInteger(row[headers.indexOf("AC")]) // Video completions - AC
+          const videoStarts = parseInteger(row[headers.indexOf("X")]) // Video starts - X (mesma coluna)
+          const totalEngagements = parseInteger(row[headers.indexOf("R")]) // Total engagements - R
+          const formato = row[headers.indexOf("Platform position")] || "" // Platform position
+          
+          // Debug para primeira linha
+          if (rows.indexOf(row) === 0) {
+            console.log("Debug primeira linha (data.values):", {
+              date,
+              campaignName,
+              creativeTitle,
+              impressions,
+              formato,
+              hasImpressions: impressions > 0
+            })
+          }
+
+          const cpm = impressions > 0 ? totalSpent / (impressions / 1000) : 0
+          const cpc = clicks > 0 ? totalSpent / clicks : 0
+          const ctr = impressions > 0 ? (clicks / impressions) * 100 : 0
+          const frequency = reach > 0 ? impressions / reach : 0
+
+          return {
+            date,
+            campaignName,
+            creativeTitle,
+            reach,
+            impressions,
+            clicks,
+            totalSpent,
+            videoViews,
+            videoViews25,
+            videoViews50,
+            videoViews75,
+            videoCompletions,
+            videoStarts,
+            totalEngagements,
+            cpm,
+            cpc,
+            ctr,
+            frequency,
+            formato,
+          } as CreativeDataUntreated
+        })
+        
+        console.log("Dados antes do filtro (data.values):", processed.length)
+        const filtered = processed.filter((item: CreativeDataUntreated) => item.date && item.impressions > 0)
+        console.log("Dados após filtro (data.values):", filtered.length)
+        console.log("Exemplos de dados filtrados (data.values):", filtered.slice(0, 2))
+
+        console.log("Dados processados Untreated (data.values):", filtered.length)
+        console.log("Amostra dados Untreated (data.values):", filtered.slice(0, 3))
+        setProcessedDataUntreated(filtered)
+
+        // Extrair formatos únicos
+        const formatoSet = new Set<string>()
+        filtered.forEach((item) => {
+          if (item.formato) {
+            formatoSet.add(item.formato)
+          }
+        })
+        const formatos = Array.from(formatoSet).filter(Boolean).sort()
+        console.log("Formatos disponíveis (data.values):", formatos)
+        setAvailableFormatos(formatos)
+    } else if (apiDataUntreated?.values) {
       const headers = apiDataUntreated.values[0]
       const rows = apiDataUntreated.values.slice(1)
       console.log("Headers Untreated:", headers)
