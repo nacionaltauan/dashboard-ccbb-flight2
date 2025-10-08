@@ -147,6 +147,7 @@ const CriativosMeta: FC = () => {
       const rows = apiDataUntreated.values.slice(1)
       console.log("Headers Untreated:", headers)
       console.log("Rows count Untreated:", rows.length)
+      console.log("Primeira linha de dados:", rows[0])
 
       const processed: CreativeDataUntreated[] = rows
         .map((row: string[]) => {
@@ -175,6 +176,18 @@ const CriativosMeta: FC = () => {
           const videoStarts = parseInteger(row[headers.indexOf("X")]) // Video starts - X (mesma coluna)
           const totalEngagements = parseInteger(row[headers.indexOf("R")]) // Total engagements - R
           const formato = row[headers.indexOf("Platform position")] || "" // Platform position
+          
+          // Debug para primeira linha
+          if (rows.indexOf(row) === 0) {
+            console.log("Debug primeira linha:", {
+              date,
+              campaignName,
+              creativeTitle,
+              impressions,
+              formato,
+              hasImpressions: impressions > 0
+            })
+          }
 
           const cpm = impressions > 0 ? totalSpent / (impressions / 1000) : 0
           const cpc = clicks > 0 ? totalSpent / clicks : 0
@@ -203,15 +216,19 @@ const CriativosMeta: FC = () => {
             formato,
           } as CreativeDataUntreated
         })
-        .filter((item: CreativeDataUntreated) => item.date && item.impressions > 0)
+        
+        console.log("Dados antes do filtro:", processed.length)
+        const filtered = processed.filter((item: CreativeDataUntreated) => item.date && item.impressions > 0)
+        console.log("Dados após filtro (date && impressions > 0):", filtered.length)
+        console.log("Exemplos de dados filtrados:", filtered.slice(0, 2))
 
-      console.log("Dados processados Untreated:", processed.length)
-      console.log("Amostra dados Untreated:", processed.slice(0, 3))
-      setProcessedDataUntreated(processed)
+      console.log("Dados processados Untreated:", filtered.length)
+      console.log("Amostra dados Untreated:", filtered.slice(0, 3))
+      setProcessedDataUntreated(filtered)
 
       // Extrair formatos únicos
       const formatoSet = new Set<string>()
-      processed.forEach((item) => {
+      filtered.forEach((item) => {
         if (item.formato) {
           formatoSet.add(item.formato)
         }
