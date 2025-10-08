@@ -1028,6 +1028,19 @@ export const fetchMetaTratadoData = async () => {
   }
 }
 
+// NOVA FUNÇÃO para buscar dados do Meta - Não Tratado
+export const fetchMetaNaoTratadoData = async () => {
+  try {
+    const response = await apiNacional.get(
+      "/google/sheets/1tdFuCDyh1RDvhv9EGoZVJTBiHLSSOk-uUjp5rSbMUgg/data?range=Meta%20Não%20tratado",
+    )
+    return response.data
+  } catch (error) {
+    console.error("Erro ao buscar dados do Meta - Não Tratado:", error)
+    throw error
+  }
+}
+
 // NOVO HOOK para dados do Meta - Tratado
 export const useMetaTratadoData = () => {
   const [data, setData] = useState<any>(null)
@@ -1038,6 +1051,32 @@ export const useMetaTratadoData = () => {
     try {
       setLoading(true)
       const result = await fetchMetaTratadoData()
+      setData(result)
+      setError(null)
+    } catch (err) {
+      setError(err as Error)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    loadData()
+  }, [loadData])
+
+  return { data, loading, error, refetch: loadData }
+}
+
+// NOVO HOOK para dados do Meta - Não Tratado
+export const useMetaNaoTratadoData = () => {
+  const [data, setData] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
+
+  const loadData = useCallback(async () => {
+    try {
+      setLoading(true)
+      const result = await fetchMetaNaoTratadoData()
       setData(result)
       setError(null)
     } catch (err) {

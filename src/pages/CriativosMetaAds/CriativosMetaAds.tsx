@@ -1,7 +1,7 @@
 "use client"
 import { useState, useEffect, useMemo, useCallback, useRef, type FC } from "react"
 import { Calendar, MapPin } from "lucide-react"
-import { apiNacional } from "../../services/api"
+import { apiNacional, useMetaNaoTratadoData } from "../../services/api"
 import Loading from "../../components/Loading/Loading"
 import PDFDownloadButton from "../../components/PDFDownloadButton/PDFDownloadButton"
 import { googleDriveApi } from "../../services/googleDriveApi"
@@ -28,6 +28,29 @@ interface CreativeData {
   cpc: number
   ctr: number
   frequency: number
+  formato?: string // Adicionado para visão por formato
+}
+
+interface CreativeDataUntreated {
+  date: string
+  campaignName: string
+  creativeTitle: string
+  reach: number
+  impressions: number
+  clicks: number
+  totalSpent: number
+  videoViews: number
+  videoViews25: number
+  videoViews50: number
+  videoViews75: number
+  videoCompletions: number
+  videoStarts: number
+  totalEngagements: number
+  cpm: number
+  cpc: number
+  ctr: number
+  frequency: number
+  formato: string
 }
 
 // Hook específico para buscar dados Meta - Tratado
@@ -61,11 +84,16 @@ const useMetaTratadoData = () => {
 const CriativosMeta: FC = () => {
   const contentRef = useRef<HTMLDivElement>(null)
   const { data: apiData, loading, error } = useMetaTratadoData()
+  const { data: apiDataUntreated, loading: loadingUntreated, error: errorUntreated } = useMetaNaoTratadoData()
   const { data: benchmarkData, loading: benchmarkLoading } = useBenchmarkNacionalData()
   const [processedData, setProcessedData] = useState<CreativeData[]>([])
+  const [processedDataUntreated, setProcessedDataUntreated] = useState<CreativeDataUntreated[]>([])
   const [dateRange, setDateRange] = useState<{ start: string; end: string }>({ start: "", end: "" })
   const [selectedPracas, setSelectedPracas] = useState<string[]>([])
   const [availablePracas, setAvailablePracas] = useState<string[]>([])
+  const [selectedFormatos, setSelectedFormatos] = useState<string[]>([])
+  const [availableFormatos, setAvailableFormatos] = useState<string[]>([])
+  const [viewMode, setViewMode] = useState<'overview' | 'format'>('overview')
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage] = useState(10)
   
@@ -110,6 +138,83 @@ const CriativosMeta: FC = () => {
 
     loadMedias()
   }, [])
+
+  // Processar dados não tratados (Meta Não Tratado)
+  useEffect(() => {
+    if (apiDataUntreated?.values) {
+      const headers = apiDataUntreated.values[0]
+      const rows = apiDataUntreated.values.slice(1)
+
+      const processed: CreativeDataUntreated[] = rows
+        .map((row: string[]) => {
+          const parseNumber = (value: string) => {
+            if (!value || value === "") return 0
+            return Number.parseFloat(value.replace(/[R$\s.]/g, "").replace(",", ".")) || 0
+          }
+
+          const parseInteger = (value: string) => {
+            if (!value || value === "") return 0
+            return Number.parseInt(value.replace(/[.\s]/g, "").replace(",", "")) || 0
+          }
+
+          const date = row[headers.indexOf("A")] || "" // Date - A
+          const campaignName = row[headers.indexOf("B")] || "" // Campaign name - B
+          const creativeTitle = row[headers.indexOf("D")] || "" // Creative title - D
+          const reach = parseInteger(row[headers.indexOf("M")]) // Reach - M
+          const impressions = parseInteger(row[headers.indexOf("N")]) // Impressions - N
+          const clicks = parseInteger(row[headers.indexOf("Q")]) // Clicks - Q
+          const totalSpent = parseNumber(row[headers.indexOf("AF")]) // Total spent - AF
+          const videoViews = parseInteger(row[headers.indexOf("X")]) // Video views - X
+          const videoViews25 = parseInteger(row[headers.indexOf("Z")]) // Video views at 25% - Z
+          const videoViews50 = parseInteger(row[headers.indexOf("AA")]) // Video views at 50% - AA
+          const videoViews75 = parseInteger(row[headers.indexOf("AB")]) // Video views at 75% - AB
+          const videoCompletions = parseInteger(row[headers.indexOf("AC")]) // Video completions - AC
+          const videoStarts = parseInteger(row[headers.indexOf("X")]) // Video starts - X (mesma coluna)
+          const totalEngagements = parseInteger(row[headers.indexOf("R")]) // Total engagements - R
+          const formato = row[headers.indexOf("Platform position")] || "" // Platform position
+
+          const cpm = impressions > 0 ? totalSpent / (impressions / 1000) : 0
+          const cpc = clicks > 0 ? totalSpent / clicks : 0
+          const ctr = impressions > 0 ? (clicks / impressions) * 100 : 0
+          const frequency = reach > 0 ? impressions / reach : 0
+
+          return {
+            date,
+            campaignName,
+            creativeTitle,
+            reach,
+            impressions,
+            clicks,
+            totalSpent,
+            videoViews,
+            videoViews25,
+            videoViews50,
+            videoViews75,
+            videoCompletions,
+            videoStarts,
+            totalEngagements,
+            cpm,
+            cpc,
+            ctr,
+            frequency,
+            formato,
+          } as CreativeDataUntreated
+        })
+        .filter((item: CreativeDataUntreated) => item.date && item.impressions > 0)
+
+      setProcessedDataUntreated(processed)
+
+      // Extrair formatos únicos
+      const formatoSet = new Set<string>()
+      processed.forEach((item) => {
+        if (item.formato) {
+          formatoSet.add(item.formato)
+        }
+      })
+      const formatos = Array.from(formatoSet).filter(Boolean).sort()
+      setAvailableFormatos(formatos)
+    }
+  }, [apiDataUntreated])
 
   useEffect(() => {
     if (apiData?.values) {
@@ -230,9 +335,20 @@ const CriativosMeta: FC = () => {
     })
   }
 
+  const toggleFormato = (formato: string) => {
+    setSelectedFormatos((prev) => {
+      if (prev.includes(formato)) {
+        return prev.filter((f) => f !== formato)
+      }
+      return [...prev, formato]
+    })
+  }
+
   // 3. ATUALIZAÇÃO DA LÓGICA DE FILTRAGEM
   const filteredData = useMemo(() => {
-    let filtered = processedData
+    // Escolher dados baseados no modo de visualização
+    const sourceData = viewMode === 'overview' ? processedData : processedDataUntreated
+    let filtered = sourceData
 
     // Filtro por período
     if (dateRange.start && dateRange.end) {
@@ -259,10 +375,21 @@ const CriativosMeta: FC = () => {
       })
     }
 
+    // Filtro por formato (apenas na visão por formato)
+    if (viewMode === 'format' && selectedFormatos.length > 0) {
+      filtered = filtered.filter((item) => {
+        return 'formato' in item && selectedFormatos.includes(item.formato)
+      })
+    }
+
     // Agrupar por criativo APÓS a filtragem
     const groupedData: Record<string, CreativeData> = {}
     filtered.forEach((item) => {
-      const key = item.creativeTitle
+      // Na visão por formato, agrupar por criativo + formato
+      const key = viewMode === 'format' && 'formato' in item 
+        ? `${item.creativeTitle}_${item.formato}` 
+        : item.creativeTitle
+      
       if (!groupedData[key]) {
         groupedData[key] = { ...item }
       } else {
@@ -291,7 +418,7 @@ const CriativosMeta: FC = () => {
     finalData.sort((a, b) => b.totalSpent - a.totalSpent)
 
     return finalData
-  }, [processedData, dateRange, selectedPracas])
+  }, [processedData, processedDataUntreated, dateRange, selectedPracas, selectedFormatos, viewMode])
 
   const paginatedData = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage
@@ -300,6 +427,45 @@ const CriativosMeta: FC = () => {
   }, [filteredData, currentPage, itemsPerPage])
 
   const totalPages = Math.ceil(filteredData.length / itemsPerPage)
+
+  // Tabela secundária agrupada por formato (apenas na visão por formato)
+  const formatSummaryData = useMemo(() => {
+    if (viewMode !== 'format') return []
+    
+    const formatGroups: Record<string, CreativeData> = {}
+    filteredData.forEach((item) => {
+      if ('formato' in item && item.formato) {
+        const formato = item.formato
+        if (!formatGroups[formato]) {
+          formatGroups[formato] = {
+            ...item,
+            creativeTitle: formato, // Usar formato como título
+            campaignName: '', // Limpar nome da campanha
+          }
+        } else {
+          formatGroups[formato].impressions += item.impressions
+          formatGroups[formato].reach += item.reach
+          formatGroups[formato].clicks += item.clicks
+          formatGroups[formato].totalSpent += item.totalSpent
+          formatGroups[formato].videoViews += item.videoViews
+          formatGroups[formato].videoViews25 += item.videoViews25
+          formatGroups[formato].videoViews50 += item.videoViews50
+          formatGroups[formato].videoViews75 += item.videoViews75
+          formatGroups[formato].videoCompletions += item.videoCompletions
+          formatGroups[formato].videoStarts += item.videoStarts
+          formatGroups[formato].totalEngagements += item.totalEngagements
+        }
+      }
+    })
+
+    return Object.values(formatGroups).map((item) => ({
+      ...item,
+      cpm: item.impressions > 0 ? item.totalSpent / (item.impressions / 1000) : 0,
+      cpc: item.clicks > 0 ? item.totalSpent / item.clicks : 0,
+      ctr: item.impressions > 0 ? (item.clicks / item.impressions) * 100 : 0,
+      frequency: item.reach > 0 ? item.impressions / item.reach : 0,
+    })).sort((a, b) => b.totalSpent - a.totalSpent)
+  }, [filteredData, viewMode])
 
   const totals = useMemo(() => {
     return {
@@ -359,14 +525,14 @@ const CriativosMeta: FC = () => {
     setSelectedCreative(null)
   }
 
-  if (loading) {
+  if (loading || loadingUntreated) {
     return <Loading message="Carregando criativos Meta..." />
   }
 
-  if (error) {
+  if (error || errorUntreated) {
     return (
       <div className="bg-red-50/90 backdrop-blur-sm border border-red-200 rounded-lg p-4">
-        <p className="text-red-600">Erro ao carregar dados: {error.message}</p>
+        <p className="text-red-600">Erro ao carregar dados: {error?.message || errorUntreated?.message}</p>
       </div>
     )
   }
@@ -414,13 +580,35 @@ const CriativosMeta: FC = () => {
             >
               🔄 Recarregar Mídias
             </button>
+            <div className="flex bg-gray-100 rounded-lg p-1">
+              <button
+                onClick={() => setViewMode('overview')}
+                className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                  viewMode === 'overview'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Visão Geral
+              </button>
+              <button
+                onClick={() => setViewMode('format')}
+                className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                  viewMode === 'format'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Visão por Formato
+              </button>
+            </div>
             <span>Última atualização: {new Date().toLocaleString("pt-BR")}</span>
           </div>
         </div>
       </div>
 
       <div className="card-overlay rounded-lg shadow-lg p-4">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className={`grid gap-4 ${viewMode === 'format' ? 'grid-cols-1 lg:grid-cols-3' : 'grid-cols-1 lg:grid-cols-2'}`}>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
               <Calendar className="w-4 h-4 mr-2" />
@@ -463,6 +651,30 @@ const CriativosMeta: FC = () => {
               ))}
             </div>
           </div>
+
+          {viewMode === 'format' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                <MapPin className="w-4 h-4 mr-2" />
+                Formatos
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {availableFormatos.map((formato) => (
+                  <button
+                    key={formato}
+                    onClick={() => toggleFormato(formato)}
+                    className={`px-3 py-1 rounded-full text-xs font-medium transition-colors duration-200 ${
+                      selectedFormatos.includes(formato)
+                        ? "bg-green-100 text-green-800 border border-green-300"
+                        : "bg-gray-100 text-gray-600 border border-gray-300 hover:bg-gray-200"
+                    }`}
+                  >
+                    {formato}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
         </div>
       </div>
@@ -517,6 +729,9 @@ const CriativosMeta: FC = () => {
               <tr className="bg-blue-600 text-white">
                 <th className="text-left py-3 px-4 font-semibold w-[5rem]">Mídia</th>
                 <th className="text-left py-3 px-4 font-semibold">Criativo</th>
+                {viewMode === 'format' && (
+                  <th className="text-left py-3 px-4 font-semibold">Formato</th>
+                )}
                 <th className="text-right py-3 px-4 font-semibold min-w-[7.5rem]">Investimento</th>
                 <th className="text-right py-3 px-4 font-semibold min-w-[7.5rem]">Impressões</th>
                 <th className="text-right py-3 px-4 font-semibold min-w-[7.5rem]">Alcance</th>
@@ -562,6 +777,13 @@ const CriativosMeta: FC = () => {
                         </p>
                       </div>
                     </td>
+                    {viewMode === 'format' && (
+                      <td className="py-3 px-4">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          {'formato' in creative ? creative.formato : 'N/A'}
+                        </span>
+                      </td>
+                    )}
                     <td className="py-3 px-4 text-right font-semibold min-w-[7.5rem]">
                       {formatCurrency(creative.totalSpent)}
                     </td>
@@ -615,6 +837,53 @@ const CriativosMeta: FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Tabela secundária agrupada por formato (apenas na visão por formato) */}
+      {viewMode === 'format' && formatSummaryData.length > 0 && (
+        <div className="card-overlay rounded-lg shadow-lg p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Resumo por Formato</h3>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-green-600 text-white">
+                  <th className="text-left py-3 px-4 font-semibold">Formato</th>
+                  <th className="text-right py-3 px-4 font-semibold min-w-[7.5rem]">Investimento</th>
+                  <th className="text-right py-3 px-4 font-semibold min-w-[7.5rem]">Impressões</th>
+                  <th className="text-right py-3 px-4 font-semibold min-w-[7.5rem]">Alcance</th>
+                  <th className="text-right py-3 px-4 font-semibold min-w-[7.5rem]">Cliques</th>
+                  <th className="text-right py-3 px-4 font-semibold min-w-[7.5rem]">Visualizações</th>
+                  <th className="text-right py-3 px-4 font-semibold min-w-[7.5rem]">Tx. Engaj.</th>
+                  <th className="text-right py-3 px-4 font-semibold min-w-[7.5rem]">CPM</th>
+                  <th className="text-right py-3 px-4 font-semibold min-w-[7.5rem]">CPC</th>
+                  <th className="text-right py-3 px-4 font-semibold min-w-[7.5rem]">CTR</th>
+                </tr>
+              </thead>
+              <tbody>
+                {formatSummaryData.map((item, index) => (
+                  <tr key={index} className={index % 2 === 0 ? "bg-green-50" : "bg-white"}>
+                    <td className="py-3 px-4">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        {item.creativeTitle}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-right font-semibold min-w-[7.5rem]">
+                      {formatCurrency(item.totalSpent)}
+                    </td>
+                    <td className="py-3 px-4 text-right min-w-[7.5rem]">{formatNumber(item.impressions)}</td>
+                    <td className="py-3 px-4 text-right min-w-[7.5rem]">{formatNumber(item.reach)}</td>
+                    <td className="py-3 px-4 text-right min-w-[7.5rem]">{formatNumber(item.clicks)}</td>
+                    <td className="py-3 px-4 text-right min-w-[7.5rem]">{formatNumber(item.videoViews)}</td>
+                    <td className="py-3 px-4 text-right min-w-[7.5rem]">{item.impressions > 0 ? ((item.totalEngagements / item.impressions) * 100).toFixed(2) : 0}%</td>
+                    <td className="py-3 px-4 text-right min-w-[7.5rem]">{formatCurrency(item.cpm)}</td>
+                    <td className="py-3 px-4 text-right min-w-[7.5rem]">{formatCurrency(item.cpc)}</td>
+                    <td className="py-3 px-4 text-right min-w-[7.5rem]">{item.ctr.toFixed(2)}%</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       <MetaCreativeModal 
         creative={selectedCreative}
