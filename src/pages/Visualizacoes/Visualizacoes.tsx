@@ -189,7 +189,7 @@ const Visualizacoes: React.FC = () => {
             const videoViews = parseInteger(item["Video views "]) // Note o espaço no final
             const videoCompletions = parseInteger(item["Video completions "]) // Note o espaço no final
             const cost = parseNumber(item["Total spent"])
-            const platform = item["Veículo"] || "Outros"
+            const platform = item["Veículo"] || ""
             const campaignName = item["Campaign name"] || ""
             const reach = parseInteger(item["Reach"])
 

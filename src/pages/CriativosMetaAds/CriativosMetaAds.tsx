@@ -166,20 +166,20 @@ const CriativosMeta: FC = () => {
             return Number.parseInt(value.replace(/[.\s]/g, "").replace(",", "")) || 0
           }
 
-          const date = row[headers.indexOf("A")] || "" // Date - A
-          const campaignName = row[headers.indexOf("B")] || "" // Campaign name - B
-          const creativeTitle = row[headers.indexOf("D")] || "" // Creative title - D
-          const reach = parseInteger(row[headers.indexOf("M")]) // Reach - M
-          const impressions = parseInteger(row[headers.indexOf("N")]) // Impressions - N
-          const clicks = parseInteger(row[headers.indexOf("Q")]) // Clicks - Q
-          const totalSpent = parseNumber(row[headers.indexOf("AF")]) // Total spent - AF
-          const videoViews = parseInteger(row[headers.indexOf("X")]) // Video views - X
-          const videoViews25 = parseInteger(row[headers.indexOf("Z")]) // Video views at 25% - Z
-          const videoViews50 = parseInteger(row[headers.indexOf("AA")]) // Video views at 50% - AA
-          const videoViews75 = parseInteger(row[headers.indexOf("AB")]) // Video views at 75% - AB
-          const videoCompletions = parseInteger(row[headers.indexOf("AC")]) // Video completions - AC
-          const videoStarts = parseInteger(row[headers.indexOf("X")]) // Video starts - X (mesma coluna)
-          const totalEngagements = parseInteger(row[headers.indexOf("R")]) // Total engagements - R
+          const date = row[headers.indexOf("Date")] || "" // Date
+          const campaignName = row[headers.indexOf("Campaign name")] || "" // Campaign name
+          const creativeTitle = row[headers.indexOf("Ad name")] || "" // Ad name (Creative title)
+          const reach = parseInteger(row[headers.indexOf("Reach")]) // Reach
+          const impressions = parseInteger(row[headers.indexOf("Impressions")]) // Impressions
+          const clicks = parseInteger(row[headers.indexOf("Clicks (all)")]) // Clicks (all)
+          const totalSpent = parseNumber(row[headers.indexOf("Cost")]) // Cost
+          const videoViews = parseInteger(row[headers.indexOf("Three-second video views")]) // Three-second video views
+          const videoViews25 = parseInteger(row[headers.indexOf("Video watches at 25%")]) // Video watches at 25%
+          const videoViews50 = parseInteger(row[headers.indexOf("Video watches at 50%")]) // Video watches at 50%
+          const videoViews75 = parseInteger(row[headers.indexOf("Video watches at 75%")]) // Video watches at 75%
+          const videoCompletions = parseInteger(row[headers.indexOf("Video watches at 100%")]) // Video watches at 100%
+          const videoStarts = parseInteger(row[headers.indexOf("Three-second video views")]) // Three-second video views (mesma coluna)
+          const totalEngagements = parseInteger(row[headers.indexOf("Post engagements")]) // Post engagements
           const formato = row[headers.indexOf("Platform position")] || "" // Platform position
           
           // Debug para primeira linha

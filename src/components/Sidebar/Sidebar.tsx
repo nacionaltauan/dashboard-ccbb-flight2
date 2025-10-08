@@ -46,7 +46,7 @@ const menuItems: MenuItem[] = [
   },
   {
     id: "visualizacoes",
-    label: "Visualizações",
+    label: "Análise de Retenção",
     path: "/visualizacoes",
     icon: <Eye className="w-5 h-5" />,
   },
