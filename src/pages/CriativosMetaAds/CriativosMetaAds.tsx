@@ -378,7 +378,7 @@ const CriativosMeta: FC = () => {
     // Filtro por formato (apenas na visão por formato)
     if (viewMode === 'format' && selectedFormatos.length > 0) {
       filtered = filtered.filter((item) => {
-        return 'formato' in item && selectedFormatos.includes(item.formato)
+        return 'formato' in item && item.formato && selectedFormatos.includes(item.formato)
       })
     }
 
@@ -386,7 +386,7 @@ const CriativosMeta: FC = () => {
     const groupedData: Record<string, CreativeData> = {}
     filtered.forEach((item) => {
       // Na visão por formato, agrupar por criativo + formato
-      const key = viewMode === 'format' && 'formato' in item 
+      const key = viewMode === 'format' && 'formato' in item && item.formato
         ? `${item.creativeTitle}_${item.formato}` 
         : item.creativeTitle
       
@@ -780,7 +780,7 @@ const CriativosMeta: FC = () => {
                     {viewMode === 'format' && (
                       <td className="py-3 px-4">
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                          {'formato' in creative ? creative.formato : 'N/A'}
+                          {'formato' in creative && creative.formato ? creative.formato : 'N/A'}
                         </span>
                       </td>
                     )}
