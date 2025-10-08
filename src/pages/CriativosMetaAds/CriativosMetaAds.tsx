@@ -141,9 +141,12 @@ const CriativosMeta: FC = () => {
 
   // Processar dados não tratados (Meta Não Tratado)
   useEffect(() => {
+    console.log("API Data Untreated:", apiDataUntreated)
     if (apiDataUntreated?.values) {
       const headers = apiDataUntreated.values[0]
       const rows = apiDataUntreated.values.slice(1)
+      console.log("Headers Untreated:", headers)
+      console.log("Rows count Untreated:", rows.length)
 
       const processed: CreativeDataUntreated[] = rows
         .map((row: string[]) => {
@@ -202,6 +205,8 @@ const CriativosMeta: FC = () => {
         })
         .filter((item: CreativeDataUntreated) => item.date && item.impressions > 0)
 
+      console.log("Dados processados Untreated:", processed.length)
+      console.log("Amostra dados Untreated:", processed.slice(0, 3))
       setProcessedDataUntreated(processed)
 
       // Extrair formatos únicos
@@ -212,6 +217,7 @@ const CriativosMeta: FC = () => {
         }
       })
       const formatos = Array.from(formatoSet).filter(Boolean).sort()
+      console.log("Formatos disponíveis:", formatos)
       setAvailableFormatos(formatos)
     }
   }, [apiDataUntreated])
@@ -348,6 +354,10 @@ const CriativosMeta: FC = () => {
   const filteredData = useMemo(() => {
     // Escolher dados baseados no modo de visualização
     const sourceData = viewMode === 'overview' ? processedData : processedDataUntreated
+    console.log("Modo de visualização:", viewMode)
+    console.log("Dados de origem:", sourceData.length)
+    console.log("Dados overview:", processedData.length)
+    console.log("Dados untreated:", processedDataUntreated.length)
     let filtered = sourceData
 
     // Filtro por período
@@ -377,9 +387,19 @@ const CriativosMeta: FC = () => {
 
     // Filtro por formato (apenas na visão por formato)
     if (viewMode === 'format' && selectedFormatos.length > 0) {
+      console.log("Aplicando filtro de formato:", selectedFormatos)
       filtered = filtered.filter((item) => {
-        return 'formato' in item && item.formato && selectedFormatos.includes(item.formato)
+        const hasFormato = 'formato' in item && item.formato && selectedFormatos.includes(item.formato)
+        if (item.creativeTitle && item.creativeTitle.includes('BB')) {
+          console.log("Item com BB:", {
+            creativeTitle: item.creativeTitle,
+            formato: 'formato' in item ? item.formato : 'N/A',
+            hasFormato: hasFormato
+          })
+        }
+        return hasFormato
       })
+      console.log("Dados após filtro de formato:", filtered.length)
     }
 
     // Agrupar por criativo APÓS a filtragem
@@ -430,8 +450,10 @@ const CriativosMeta: FC = () => {
 
   // Tabela secundária agrupada por formato (apenas na visão por formato)
   const formatSummaryData = useMemo(() => {
+    console.log("Calculando tabela secundária, viewMode:", viewMode)
     if (viewMode !== 'format') return []
     
+    console.log("Dados filtrados para tabela secundária:", filteredData.length)
     const formatGroups: Record<string, CreativeData> = {}
     filteredData.forEach((item) => {
       if ('formato' in item && item.formato) {
@@ -458,13 +480,17 @@ const CriativosMeta: FC = () => {
       }
     })
 
-    return Object.values(formatGroups).map((item) => ({
+    const result = Object.values(formatGroups).map((item) => ({
       ...item,
       cpm: item.impressions > 0 ? item.totalSpent / (item.impressions / 1000) : 0,
       cpc: item.clicks > 0 ? item.totalSpent / item.clicks : 0,
       ctr: item.impressions > 0 ? (item.clicks / item.impressions) * 100 : 0,
       frequency: item.reach > 0 ? item.impressions / item.reach : 0,
     })).sort((a, b) => b.totalSpent - a.totalSpent)
+    
+    console.log("Tabela secundária calculada:", result.length, "itens")
+    console.log("Formatos na tabela secundária:", result.map(r => r.creativeTitle))
+    return result
   }, [filteredData, viewMode])
 
   const totals = useMemo(() => {
