@@ -601,7 +601,7 @@ const LinhaTempo: React.FC = () => {
                 legends={ selectedVehicles.length > 0 ? [{ anchor: "top-right", direction: "row", justify: false, translateX: 0, translateY: -25, itemsSpacing: 10, itemDirection: "left-to-right", itemWidth: 120, itemHeight: 20, itemOpacity: 0.85, symbolSize: 12, symbolShape: "circle", effects: [{ on: "hover", style: { itemBackground: "rgba(0, 0, 0, .03)", itemOpacity: 1 } }] }] : [] }
                 tooltip={({ point }) => (
                   <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
-                    <div className="text-sm font-medium text-gray-900">Data: {new Date(point.data.x as string).toLocaleDateString("pt-BR")}</div>
+                    <div className="text-sm font-medium text-gray-900">Data: {createLocalDate(point.data.x as string).toLocaleDateString("pt-BR")}</div>
                     <div className="text-sm text-gray-600">{point.seriesId}: {formatChartValue(point.data.y as number)}</div>
                   </div>
                 )}
