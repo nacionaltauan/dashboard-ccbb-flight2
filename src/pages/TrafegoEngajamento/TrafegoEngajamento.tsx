@@ -2,14 +2,12 @@
 
 import type React from "react"
 import { useState, useMemo, useRef } from "react"
-import { TrendingUp, Calendar, Users, BarChart3, MessageCircle, HandHeart } from "lucide-react"
+import { TrendingUp, Calendar, Users, BarChart3, MessageCircle, HandHeart, Filter } from "lucide-react"
 import Loading from "../../components/Loading/Loading"
 import PDFDownloadButton from "../../components/PDFDownloadButton/PDFDownloadButton"
 import { 
-  useGA4ResumoNacionalData, 
-  useGA4CompletoNacionalData, 
-  useGA4SourceNacionalData,
-  useEventosReceptivosData 
+  useGA4ReceptivosData,
+  useEventosReceptivosNovaData 
 } from "../../services/api"
 import BrazilMap from "../../components/BrazilMap/BrazilMap" // Importar novo componente de mapa
 
@@ -49,13 +47,11 @@ const API_TO_GEOJSON_STATE_NAMES: { [key: string]: string } = {
 
 const TrafegoEngajamento: React.FC<TrafegoEngajamentoProps> = () => {
   const contentRef = useRef<HTMLDivElement>(null)
-  const { data: ga4ResumoData, loading: resumoLoading, error: resumoError } = useGA4ResumoNacionalData()
-  const { data: ga4CompletoData, loading: completoLoading, error: completoError } = useGA4CompletoNacionalData()
-  const { data: ga4SourceData, loading: sourceLoading, error: sourceError } = useGA4SourceNacionalData()
-  const { data: eventosReceptivosData, loading: eventosLoading, error: eventosError } = useEventosReceptivosData()
+  const { data: ga4ReceptivosData, loading: receptivosLoading, error: receptivosError } = useGA4ReceptivosData()
+  const { data: eventosReceptivosData, loading: eventosLoading, error: eventosError } = useEventosReceptivosNovaData()
 
 
-  console.log("Dados ga4ResumoData:", ga4ResumoData)
+  console.log("Dados ga4ReceptivosData:", ga4ReceptivosData)
 
   // Função para formatar a data como YYYY-MM-DD
   const getTodayDateString = () => {
@@ -71,6 +67,8 @@ const TrafegoEngajamento: React.FC<TrafegoEngajamentoProps> = () => {
     end: getTodayDateString(), // Define o 'end' como a data de hoje
   })
 
+  const [selectedColunaQ, setSelectedColunaQ] = useState<string[]>([])
+
   // Função para verificar se uma data está dentro do range selecionado
   const isDateInRange = (dateStr: string): boolean => {
     if (!dateStr || !dateRange.start || !dateRange.end) return true
@@ -81,6 +79,46 @@ const TrafegoEngajamento: React.FC<TrafegoEngajamentoProps> = () => {
     const endDate = new Date(dateRange.end).toISOString().split("T")[0]
 
     return date >= startDate && date <= endDate
+  }
+
+  // Função para obter valores únicos da coluna Q
+  const valoresColunaQ = useMemo(() => {
+    if (!ga4ReceptivosData?.data?.values || ga4ReceptivosData.data.values.length <= 1) {
+      return []
+    }
+
+    const rows = ga4ReceptivosData.data.values.slice(1)
+    const colunaQIndex = 16 // Coluna Q (índice 16)
+    const valores = new Set<string>()
+
+    rows.forEach((row: any[]) => {
+      const valor = row[colunaQIndex]?.toString().trim() || ""
+      if (valor) {
+        valores.add(valor)
+      }
+    })
+
+    return Array.from(valores).sort()
+  }, [ga4ReceptivosData])
+
+  // Função para verificar se a linha passa pelo filtro da coluna Q
+  const passaFiltroColunaQ = (row: any[]): boolean => {
+    if (selectedColunaQ.length === 0) return true
+    
+    const colunaQIndex = 16 // Coluna Q (índice 16)
+    const valorColunaQ = row[colunaQIndex]?.toString().trim() || ""
+    
+    return selectedColunaQ.includes(valorColunaQ)
+  }
+
+  // Função para alternar seleção do filtro da coluna Q
+  const toggleColunaQ = (valor: string) => {
+    setSelectedColunaQ((prev) => {
+      if (prev.includes(valor)) {
+        return prev.filter((v) => v !== valor)
+      }
+      return [...prev, valor]
+    })
   }
 
   // Função para obter cor do veículo/plataforma
@@ -106,12 +144,10 @@ const TrafegoEngajamento: React.FC<TrafegoEngajamentoProps> = () => {
     return colors[lowerSource] || "#6b7280"
   }
 
-  // Processamento dos dados da API GA4 Source (nova funcionalidade) com filtro de data
+  // Processamento dos dados da nova planilha GA4 Receptivos - Plataformas (coluna D)
   const processedSourceData = useMemo(() => {
     
-    // CORREÇÃO: Verificar se existe data.values ao invés de só values
-    if (!ga4SourceData?.data?.values || ga4SourceData.data.values.length <= 1) {
-
+    if (!ga4ReceptivosData?.data?.values || ga4ReceptivosData.data.values.length <= 1) {
       return {
         veiculosDetalhados: [],
         fontesPorPlataforma: {},
@@ -120,17 +156,13 @@ const TrafegoEngajamento: React.FC<TrafegoEngajamentoProps> = () => {
       }
     }
 
-    // CORREÇÃO: Acessar ga4SourceData.data.values
-    const headers = ga4SourceData.data.values[0]
-    const rows = ga4SourceData.data.values.slice(1)
+    const headers = ga4ReceptivosData.data.values[0]
+    const rows = ga4ReceptivosData.data.values.slice(1)
 
-
-    // Índices das colunas
-    const dateIndex = headers.indexOf("Date")
-    const campaignIndex = headers.indexOf("User campaign name")
-    const sourceIndex = headers.indexOf("Session manual source")
-    const sessionsIndex = headers.indexOf("Sessions")
-
+    // Índices das colunas - coluna D (índice 3) para plataformas
+    const dateIndex = headers.indexOf("Date") || 0
+    const plataformaIndex = 3 // Coluna D
+    const sessionsIndex = 8 // Coluna I para sessões
 
     const sourceData: { [key: string]: number } = {}
     const dataResumo: { [key: string]: number } = {}
@@ -138,39 +170,40 @@ const TrafegoEngajamento: React.FC<TrafegoEngajamentoProps> = () => {
 
     rows.forEach((row: any[], index: number) => {
       const date = row[dateIndex] || ""
-
-     
+      
       // Aplicar filtro de data
       if (!isDateInRange(date)) {
-       
+        return
+      }
+
+      // Aplicar filtro da coluna Q
+      if (!passaFiltroColunaQ(row)) {
         return
       }
 
       const sessions = Number.parseInt(row[sessionsIndex]) || 0
-      const source = row[sourceIndex] || "Outros" // USAR SOURCE em vez de plataforma
-      const campaign = row[campaignIndex] || "(not set)"
+      const plataforma = row[plataformaIndex] || "Outros"
 
       if (sessions > 0) {
         totalSessions += sessions
 
-        // Agrupar por SOURCE em vez de plataforma
-        sourceData[source] = (sourceData[source] || 0) + sessions
+        // Agrupar por plataforma
+        sourceData[plataforma] = (sourceData[plataforma] || 0) + sessions
 
         // Resumo por data
         if (date) {
           dataResumo[date] = (dataResumo[date] || 0) + sessions
         }
-
       }
     })
 
-    // Converter em arrays ordenados usando SOURCE
+    // Converter em arrays ordenados
     const veiculosDetalhados = Object.entries(sourceData)
-      .map(([source, sessoes]) => ({
-        plataforma: source, // manter nome da propriedade para compatibilidade
+      .map(([plataforma, sessoes]) => ({
+        plataforma,
         sessoes,
         percentual: totalSessions > 0 ? (sessoes / totalSessions) * 100 : 0,
-        cor: getPlataformaColor(source),
+        cor: getPlataformaColor(plataforma),
       }))
       .sort((a, b) => b.sessoes - a.sessoes)
 
@@ -180,58 +213,80 @@ const TrafegoEngajamento: React.FC<TrafegoEngajamentoProps> = () => {
       totalSessions,
       resumoPorData: dataResumo,
     }
-  }, [ga4SourceData, dateRange])
+  }, [ga4ReceptivosData, dateRange, selectedColunaQ])
 
   const processedEventosData = useMemo(() => {
-  if (!eventosReceptivosData?.data?.values || eventosReceptivosData.data.values.length <= 1) {
+    if (!eventosReceptivosData?.data?.values || eventosReceptivosData.data.values.length <= 1) {
+      return {
+        bbTrack: 0,
+        firstVisit: 0,
+        totalCTAs: 0,
+      }
+    }
+
+    const headers = eventosReceptivosData.data.values[0]
+    const rows = eventosReceptivosData.data.values.slice(1)
+
+    // Índices das colunas - coluna C (índice 2) para tipo de evento, coluna F (índice 5) para contagem
+    const dateIndex = headers.indexOf("Date") || 0
+    const eventTypeIndex = 2 // Coluna C
+    const eventCountIndex = 5 // Coluna F
+
+    let bbTrackTotal = 0
+    let firstVisitTotal = 0
+
+    rows.forEach((row: any[]) => {
+      const date = row[dateIndex] || ""
+      
+      // Aplicar filtro de data
+      if (!isDateInRange(date)) {
+        return
+      }
+
+      const eventType = row[eventTypeIndex] || ""
+      const eventCount = parseInt(row[eventCountIndex]) || 0
+
+      // Lógica: IF Coluna C = "botao-cta", THEN somar coluna F
+      if (eventType === "botao-cta") {
+        bbTrackTotal += eventCount
+      }
+    })
+
+    // First Visit vem da planilha GA4_receptivos, coluna J
+    if (ga4ReceptivosData?.data?.values && ga4ReceptivosData.data.values.length > 1) {
+      const ga4Headers = ga4ReceptivosData.data.values[0]
+      const ga4Rows = ga4ReceptivosData.data.values.slice(1)
+      
+      const ga4DateIndex = ga4Headers.indexOf("Date") || 0
+      const firstVisitIndex = 9 // Coluna J
+
+      ga4Rows.forEach((row: any[]) => {
+        const date = row[ga4DateIndex] || ""
+        
+        if (!isDateInRange(date)) {
+          return
+        }
+
+        // Aplicar filtro da coluna Q
+        if (!passaFiltroColunaQ(row)) {
+          return
+        }
+
+        const firstVisitCount = parseInt(row[firstVisitIndex]) || 0
+        firstVisitTotal += firstVisitCount
+      })
+    }
+
     return {
-      bbTrack: 0,
-      firstVisit: 0,
-      totalCTAs: 0,
+      bbTrack: bbTrackTotal,
+      firstVisit: firstVisitTotal,
+      totalCTAs: bbTrackTotal + firstVisitTotal,
     }
-  }
-
-  const headers = eventosReceptivosData.data.values[0]
-  const rows = eventosReceptivosData.data.values.slice(1)
-
-  // Índices das colunas
-  const dateIndex = headers.indexOf("Date")
-  const eventNameIndex = headers.indexOf("Event name") 
-  const eventCountIndex = headers.indexOf("Event count")
-
-  let bbTrackTotal = 0
-  let firstVisitTotal = 0
-
-  rows.forEach((row: any[]) => {
-    const date = row[dateIndex] || ""
-    
-    // Aplicar filtro de data
-    if (!isDateInRange(date)) {
-      return
-    }
-
-    const eventName = row[eventNameIndex] || ""
-    const eventCount = parseInt(row[eventCountIndex]) || 0
-
-    // Mapear eventos para categorias
-    if (eventName === "bbTrack") {
-      bbTrackTotal += eventCount
-    } else if (eventName === "first_visit") {
-      firstVisitTotal += eventCount
-    }
-  })
-
-  return {
-    bbTrack: bbTrackTotal,
-    firstVisit: firstVisitTotal,
-    totalCTAs: bbTrackTotal + firstVisitTotal,
-  }
-}, [eventosReceptivosData, dateRange])
+  }, [eventosReceptivosData, ga4ReceptivosData, dateRange, selectedColunaQ])
 
   const processedResumoData = useMemo(() => {
     
-    // CORREÇÃO: Verificar se existe data.values ao invés de só values
-    if (!ga4ResumoData?.data?.values || ga4ResumoData.data.values.length <= 1) {
+    if (!ga4ReceptivosData?.data?.values || ga4ReceptivosData.data.values.length <= 1) {
       return {
         receptivo: {
           sessoesCampanha: 0,
@@ -248,23 +303,14 @@ const TrafegoEngajamento: React.FC<TrafegoEngajamentoProps> = () => {
       }
     }
 
-    // CORREÇÃO: Acessar ga4ResumoData.data.values
-    const headers = ga4ResumoData.data.values[0]
-    const rows = ga4ResumoData.data.values.slice(1)
+    const headers = ga4ReceptivosData.data.values[0]
+    const rows = ga4ReceptivosData.data.values.slice(1)
 
-
-    // Índices das colunas
-    const dateIndex = headers.indexOf("Date")
-    const regionIndex = headers.indexOf("Region")
-    const deviceIndex = headers.indexOf("Device category")
-    const sessionsIndex = headers.indexOf("Sessions")
-    const bounceRateIndex = headers.indexOf("Bounce rate")
-    const avgDurationIndex = headers.indexOf("Average session duration")
-    
-    // Novos CTAs
-    const whatsappIndex = headers.indexOf("Key event count for clique_whatsapp_flutuante")
-    const contrateAgoraIndex = headers.indexOf("Key event count for clique_cta_contrate_agora")
-    const faleConoscoIndex = headers.indexOf("Key event count for clique_cta_fale_com_a_gente")
+    // Índices das colunas da nova planilha GA4_receptivos
+    const dateIndex = headers.indexOf("Date") || 0
+    const regionIndex = 4 // Coluna E
+    const deviceIndex = 7 // Coluna H
+    const sessionsIndex = 8 // Coluna I
 
     let totalSessions = 0
     let totalSaibaMais = 0
@@ -287,26 +333,17 @@ const TrafegoEngajamento: React.FC<TrafegoEngajamentoProps> = () => {
         return
       }
 
+      // Aplicar filtro da coluna Q
+      if (!passaFiltroColunaQ(row)) {
+        return
+      }
+
       const sessions = Number.parseInt(row[sessionsIndex]) || 0
-      const duration = Number.parseFloat(row[avgDurationIndex]) || 0
-      const bounceRate = Number.parseFloat(row[bounceRateIndex]) || 0
       const device = row[deviceIndex] || "Outros"
       const region = row[regionIndex] || "Outros"
-      
-      // Novos CTAs
-      const whatsapp = Number.parseInt(row[whatsappIndex]) || 0
-      const contrateAgora = Number.parseInt(row[contrateAgoraIndex]) || 0
-      const faleConosco = Number.parseInt(row[faleConoscoIndex]) || 0
-
-      totalWhatsapp += whatsapp
-      totalContrateAgora += contrateAgora
-      totalFaleConosco += faleConosco
-      totalCTAs += whatsapp + contrateAgora + faleConosco
 
       if (sessions > 0) {
         totalSessions += sessions
-        totalDuration += duration * sessions
-        totalBounceRate += bounceRate * sessions
         validRows += sessions
 
         // Dispositivos
@@ -316,11 +353,9 @@ const TrafegoEngajamento: React.FC<TrafegoEngajamentoProps> = () => {
         if (region !== "(not set)" && region.trim() !== "" && region !== " " && region !== "Outros") {
           const normalizedRegion = API_TO_GEOJSON_STATE_NAMES[region] || region
           regionData[normalizedRegion] = (regionData[normalizedRegion] || 0) + sessions
-        } else {
         }
       }
     })
-   
 
     // Converter em arrays ordenados
     const dispositivos = Object.entries(deviceData)
@@ -332,22 +367,13 @@ const TrafegoEngajamento: React.FC<TrafegoEngajamentoProps> = () => {
       }))
       .sort((a, b) => b.sessoes - a.sessoes)
 
-    // Converter duração para formato hh:mm:ss
-    const avgDurationSec = validRows > 0 ? totalDuration / validRows : 0
-    const hours = Math.floor(avgDurationSec / 3600)
-    const minutes = Math.floor((avgDurationSec % 3600) / 60)
-    const seconds = Math.floor(avgDurationSec % 60)
-    const duracaoFormatada = `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`
-
-    const avgBounceRate = validRows > 0 ? (totalBounceRate / validRows) * 100 : 0
-
     const resultado = {
       receptivo: {
         sessoesCampanha: totalSessions,
         cliquesSaibaMais: totalSaibaMais,
         cliquesCTAs: totalCTAs,
-        duracaoSessoes: duracaoFormatada,
-        taxaRejeicao: avgBounceRate,
+        duracaoSessoes: "00:00:00",
+        taxaRejeicao: 0,
         cliquesWhatsapp: totalWhatsapp,
         cliquesContrateAgora: totalContrateAgora,
         cliquesFaleConosco: totalFaleConosco,
@@ -357,56 +383,8 @@ const TrafegoEngajamento: React.FC<TrafegoEngajamentoProps> = () => {
     }
 
     return resultado
-  }, [ga4ResumoData, dateRange])
+  }, [ga4ReceptivosData, dateRange, selectedColunaQ])
 
-  // Processamento dos dados da NOVA API GA4 Completo (para os novos cards) com filtro de data
-  const processedCompletoData = useMemo(() => {
-    
-    
-    // CORREÇÃO: Verificar se existe data.values ao invés de só values
-    if (!ga4CompletoData?.data?.values || ga4CompletoData.data.values.length <= 1) {
-      return {
-        totalSessions: 0,
-        totalEvents: 0,
-      }
-    }
-
-    // CORREÇÃO: Acessar ga4CompletoData.data.values
-    const headers = ga4CompletoData.data.values[0]
-    const rows = ga4CompletoData.data.values.slice(1)
-
-    
-
-    const dateIndex = headers.indexOf("Date")
-    const sessionsIndex = headers.indexOf("Sessions")
-    const eventCountIndex = headers.indexOf("Event count")
-
-    
-
-    let totalSessions = 0
-    let totalEvents = 0
-
-    rows.forEach((row: any[], index: number) => {
-      const date = row[dateIndex] || ""
-     
-      // Aplicar filtro de data
-      if (!isDateInRange(date)) {
-        return
-      }
-
-      const sessions = Number.parseInt(row[sessionsIndex]) || 0
-      const events = Number.parseInt(row[eventCountIndex]) || 0
-
-      totalSessions += sessions
-      totalEvents += events
-
-    })
-    
-    return {
-      totalSessions,
-      totalEvents,
-    }
-  }, [ga4CompletoData, dateRange])
 
   // Função para formatar números
   const formatNumber = (value: number): string => {
@@ -463,18 +441,16 @@ const TrafegoEngajamento: React.FC<TrafegoEngajamentoProps> = () => {
     </div>
   )
 
-  if (resumoLoading || completoLoading || sourceLoading || eventosLoading) {
+  if (receptivosLoading || eventosLoading) {
   return <Loading message="Carregando dados de tráfego e engajamento..." />
 }
 
-  if (resumoError || completoError || sourceError || eventosError) {
+if (receptivosError || eventosError) {
     return (
       <div className="p-6 text-center">
         <div className="text-red-500 mb-2">Erro ao carregar dados</div>
         <p className="text-gray-600">Não foi possível carregar os dados do GA4. Tente novamente.</p>
-        {resumoError && <p className="text-xs text-red-400">{resumoError.message}</p>}
-        {completoError && <p className="text-xs text-red-400">{completoError.message}</p>}
-        {sourceError && <p className="text-xs text-red-400">{sourceError.message}</p>}
+        {receptivosError && <p className="text-xs text-red-400">{receptivosError.message}</p>}
         {eventosError && <p className="text-xs text-red-400">{eventosError.message}</p>}
       </div>
     )
@@ -523,12 +499,35 @@ const TrafegoEngajamento: React.FC<TrafegoEngajamentoProps> = () => {
             </div>
           </div>
 
-          {/* Cards de Métricas - 4 cards ocupando 9 colunas */}
-          <div className="col-span-9 grid grid-cols-4 gap-3">
+          {/* Filtro da Coluna Q */}
+          <div className="col-span-3">
+            <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+              <Filter className="w-4 h-4 mr-2" />
+              Filtro (Coluna Q)
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {valoresColunaQ.map((valor) => (
+                <button
+                  key={valor}
+                  onClick={() => toggleColunaQ(valor)}
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors duration-200 ${
+                    selectedColunaQ.includes(valor)
+                      ? "bg-blue-100 text-blue-800 border border-blue-300"
+                      : "bg-gray-100 text-gray-600 border border-gray-300 hover:bg-gray-200"
+                  }`}
+                >
+                  {valor}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Cards de Métricas - 3 cards ocupando 6 colunas */}
+          <div className="col-span-6 grid grid-cols-3 gap-3">
             <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-medium text-green-600">Sessões Campanha</p>
+                  <p className="text-xs font-medium text-green-600">Sessões</p>
                   <p className="text-lg font-bold text-green-900">
                     {formatNumber(processedResumoData.receptivo.sessoesCampanha)}
                     
@@ -541,7 +540,7 @@ const TrafegoEngajamento: React.FC<TrafegoEngajamentoProps> = () => {
             <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-medium text-blue-600">bbTrack</p>
+                  <p className="text-xs font-medium text-blue-600">Adquirir ingressos</p>
                   <p className="text-lg font-bold text-blue-900">
                     {formatNumber(processedEventosData.bbTrack)}
                   </p>
@@ -559,18 +558,6 @@ const TrafegoEngajamento: React.FC<TrafegoEngajamentoProps> = () => {
                   </p>
                 </div>
                 <HandHeart className="w-6 h-6 text-orange-600" />
-              </div>
-            </div>
-
-            <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-lg p-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-medium text-yellow-600">Sessões Totais</p>
-                  <p className="text-lg font-bold text-yellow-900">
-                  {formatNumber(processedSourceData.totalSessions)}
-                  </p>
-                </div>
-                <BarChart3 className="w-6 h-6 text-yellow-600" />
               </div>
             </div>
           </div>
@@ -671,12 +658,12 @@ const TrafegoEngajamento: React.FC<TrafegoEngajamentoProps> = () => {
       {/* GRID CONTAINER PARA OS 2 CARDS */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         
-        {/* CARD BBTRACK */}
+        {/* CARD ADQUIRIR INGRESSOS */}
         <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center">
               <MessageCircle className="w-5 h-5 text-blue-600 mr-2" />
-              <span className="text-sm font-medium text-blue-700">bbTrack</span>
+              <span className="text-sm font-medium text-blue-700">Adquirir ingressos</span>
             </div>
             <span className="text-2xl font-bold text-blue-900">
               {formatNumber(processedEventosData.bbTrack)}
@@ -737,14 +724,14 @@ const TrafegoEngajamento: React.FC<TrafegoEngajamentoProps> = () => {
       {/* Observações */}
       <div className="card-overlay rounded-lg shadow-lg p-4">
         <p className="text-sm text-gray-600">
-          <strong>Fontes:</strong> GA4 Resumo, GA4 Completo e GA4 Source (API Nacional). Os dados são atualizados automaticamente.
+          <strong>Fontes:</strong> GA4 Receptivos e Eventos Receptivos (API Nacional). Os dados são atualizados automaticamente.
         </p>
         <p className="text-xs text-gray-500 mt-2">
           <strong>Filtro de Data:</strong> Os dados são filtrados automaticamente com base no período selecionado. Todos
           os gráficos e métricas refletem apenas os dados do período escolhido.
         </p>
         <p className="text-xs text-gray-500 mt-1">
-          <strong>Novos CTAs:</strong> bbTrack e First Visit são as principais conversões monitoradas.
+          <strong>CTAs:</strong> Adquirir ingressos (botao-cta) e First Visit são as principais conversões monitoradas.
         </p>
       </div>
     </div>

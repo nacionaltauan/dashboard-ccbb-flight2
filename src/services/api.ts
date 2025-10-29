@@ -1245,3 +1245,79 @@ export const useEventosReceptivosData = () => {
 
   return { data, loading, error, refetch: loadData }
 }
+
+// NOVAS FUNÇÕES PARA A NOVA PLANILHA 1i1nW5ig7eG_6D8BdvxtEImKjdz7YVqBthU_WkUND8QM
+export const fetchGA4ReceptivosData = async () => {
+  try {
+    const response = await apiNacional.get(
+      "/google/sheets/1i1nW5ig7eG_6D8BdvxtEImKjdz7YVqBthU_WkUND8QM/data?range=GA4_receptivos",
+    )
+    return response.data
+  } catch (error) {
+    console.error("Erro ao buscar dados do GA4 Receptivos:", error)
+    throw error
+  }
+}
+
+export const fetchEventosReceptivosNovaData = async () => {
+  try {
+    const response = await apiNacional.get(
+      "/google/sheets/1i1nW5ig7eG_6D8BdvxtEImKjdz7YVqBthU_WkUND8QM/data?range=Eventos%20Receptivos",
+    )
+    return response.data
+  } catch (error) {
+    console.error("Erro ao buscar dados de Eventos Receptivos Nova:", error)
+    throw error
+  }
+}
+
+// NOVOS HOOKS PARA A NOVA PLANILHA
+export const useGA4ReceptivosData = () => {
+  const [data, setData] = React.useState<any>(null)
+  const [loading, setLoading] = React.useState(true)
+  const [error, setError] = React.useState<Error | null>(null)
+
+  const loadData = React.useCallback(async () => {
+    try {
+      setLoading(true)
+      const result = await fetchGA4ReceptivosData()
+      setData(result)
+      setError(null)
+    } catch (err) {
+      setError(err as Error)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  React.useEffect(() => {
+    loadData()
+  }, [loadData])
+
+  return { data, loading, error, refetch: loadData }
+}
+
+export const useEventosReceptivosNovaData = () => {
+  const [data, setData] = React.useState<any>(null)
+  const [loading, setLoading] = React.useState(true)
+  const [error, setError] = React.useState<Error | null>(null)
+
+  const loadData = React.useCallback(async () => {
+    try {
+      setLoading(true)
+      const result = await fetchEventosReceptivosNovaData()
+      setData(result)
+      setError(null)
+    } catch (err) {
+      setError(err as Error)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  React.useEffect(() => {
+    loadData()
+  }, [loadData])
+
+  return { data, loading, error, refetch: loadData }
+}
