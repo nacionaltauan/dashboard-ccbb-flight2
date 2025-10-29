@@ -48,7 +48,7 @@ export const api = axios.create({
 
 export const apiNacional = axios.create({
   baseURL: API_NACIONAL_URL,
-  timeout: 10000,
+  timeout: 30000, // 30 segundos para planilhas grandes
   headers: {
     "Content-Type": "application/json",
   },

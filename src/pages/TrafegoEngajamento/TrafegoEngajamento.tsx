@@ -580,13 +580,17 @@ const TrafegoEngajamento: React.FC<TrafegoEngajamentoProps> = () => {
   }, [ga4ReceptivosData, dateRange, selectedColunaQ, selectedPraca])
 
 
-  // Função para formatar números
+  // Função para formatar números (trunca para baixo, sem arredondar para cima)
   const formatNumber = (value: number): string => {
     if (value >= 1000000) {
-      return `${(value / 1000000).toFixed(1)} mi`
+      // Trunca para baixo mantendo 1 casa decimal
+      const truncated = Math.floor(value / 100000) / 10
+      return `${truncated} mi`
     }
     if (value >= 1000) {
-      return `${(value / 1000).toFixed(1)} mil`
+      // Trunca para baixo mantendo 1 casa decimal
+      const truncated = Math.floor(value / 100) / 10
+      return `${truncated} mil`
     }
     return value.toLocaleString("pt-BR")
   }
@@ -640,12 +644,41 @@ const TrafegoEngajamento: React.FC<TrafegoEngajamentoProps> = () => {
 }
 
 if (receptivosError || eventosError) {
+    const getErrorMessage = (error: Error | null) => {
+      if (!error) return ""
+      
+      const errorMessage = error.message.toLowerCase()
+      if (errorMessage.includes("timeout")) {
+        return "A requisição está demorando mais do que o esperado. Tente novamente em alguns instantes."
+      }
+      if (errorMessage.includes("network")) {
+        return "Erro de conexão. Verifique sua internet e tente novamente."
+      }
+      return error.message
+    }
+
     return (
       <div className="p-6 text-center">
-        <div className="text-red-500 mb-2">Erro ao carregar dados</div>
-        <p className="text-gray-600">Não foi possível carregar os dados do GA4. Tente novamente.</p>
-        {receptivosError && <p className="text-xs text-red-400">{receptivosError.message}</p>}
-        {eventosError && <p className="text-xs text-red-400">{eventosError.message}</p>}
+        <div className="text-red-500 mb-2 font-semibold">Erro ao carregar dados</div>
+        <p className="text-gray-600 mb-3">Não foi possível carregar os dados do GA4. Tente novamente.</p>
+        {receptivosError && (
+          <div className="bg-red-50 border border-red-200 rounded p-3 mb-2">
+            <p className="text-sm font-medium text-red-700 mb-1">Erro GA4 Receptivos:</p>
+            <p className="text-xs text-red-600">{getErrorMessage(receptivosError)}</p>
+          </div>
+        )}
+        {eventosError && (
+          <div className="bg-red-50 border border-red-200 rounded p-3">
+            <p className="text-sm font-medium text-red-700 mb-1">Erro Eventos Receptivos:</p>
+            <p className="text-xs text-red-600">{getErrorMessage(eventosError)}</p>
+          </div>
+        )}
+        <button
+          onClick={() => window.location.reload()}
+          className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+        >
+          Recarregar Página
+        </button>
       </div>
     )
   }
