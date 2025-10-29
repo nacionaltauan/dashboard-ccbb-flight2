@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useState, useMemo, useRef } from "react"
-import { TrendingUp, Calendar, Users, BarChart3, MessageCircle, HandHeart, Filter } from "lucide-react"
+import { TrendingUp, Calendar, Users, BarChart3, MessageCircle, HandHeart, Filter, MapPin } from "lucide-react"
 import Loading from "../../components/Loading/Loading"
 import PDFDownloadButton from "../../components/PDFDownloadButton/PDFDownloadButton"
 import { 
@@ -68,17 +68,73 @@ const TrafegoEngajamento: React.FC<TrafegoEngajamentoProps> = () => {
   })
 
   const [selectedColunaQ, setSelectedColunaQ] = useState<string[]>([])
+  const [selectedPraca, setSelectedPraca] = useState<string[]>([])
+
+  // Função para normalizar data para formato YYYY-MM-DD
+  const normalizeDate = (dateStr: string | number | undefined | null): string | null => {
+    if (!dateStr) return null
+
+    const str = dateStr.toString().trim()
+    if (!str) return null
+
+    try {
+      // Tentar diferentes formatos de data
+      // Formato DD/MM/YYYY
+      if (str.includes("/")) {
+        const parts = str.split("/")
+        if (parts.length === 3) {
+          const [day, month, year] = parts
+          const date = new Date(Number.parseInt(year), Number.parseInt(month) - 1, Number.parseInt(day))
+          if (!isNaN(date.getTime())) {
+            return date.toISOString().split("T")[0]
+          }
+        }
+      }
+
+      // Formato YYYY-MM-DD
+      if (str.includes("-")) {
+        const parts = str.split("-")
+        if (parts.length === 3) {
+          const [year, month, day] = parts
+          const date = new Date(Number.parseInt(year), Number.parseInt(month) - 1, Number.parseInt(day))
+          if (!isNaN(date.getTime())) {
+            return date.toISOString().split("T")[0]
+          }
+        }
+      }
+
+      // Tentar parsing direto
+      const date = new Date(str)
+      if (!isNaN(date.getTime())) {
+        return date.toISOString().split("T")[0]
+      }
+    } catch (error) {
+      console.warn("Erro ao normalizar data:", str, error)
+    }
+
+    return null
+  }
 
   // Função para verificar se uma data está dentro do range selecionado
-  const isDateInRange = (dateStr: string): boolean => {
+  const isDateInRange = (dateStr: string | number | undefined | null): boolean => {
     if (!dateStr || !dateRange.start || !dateRange.end) return true
 
-    // Converter string de data para formato comparável (YYYY-MM-DD)
-    const date = new Date(dateStr).toISOString().split("T")[0]
-    const startDate = new Date(dateRange.start).toISOString().split("T")[0]
-    const endDate = new Date(dateRange.end).toISOString().split("T")[0]
+    const normalizedDate = normalizeDate(dateStr)
+    if (!normalizedDate) return true // Se não conseguir normalizar, não filtra
 
-    return date >= startDate && date <= endDate
+    const startDate = normalizeDate(dateRange.start) || dateRange.start
+    const endDate = normalizeDate(dateRange.end) || dateRange.end
+
+    return normalizedDate >= startDate && normalizedDate <= endDate
+  }
+
+  // Função auxiliar para obter índice de coluna pelo nome
+  const getColumnIndex = (headers: string[], columnName: string): number => {
+    const index = headers.indexOf(columnName)
+    if (index === -1) {
+      console.warn(`Coluna "${columnName}" não encontrada nos headers`)
+    }
+    return index
   }
 
   // Função para obter valores únicos da coluna Q
@@ -87,8 +143,12 @@ const TrafegoEngajamento: React.FC<TrafegoEngajamentoProps> = () => {
       return []
     }
 
+    const headers = ga4ReceptivosData.data.values[0]
     const rows = ga4ReceptivosData.data.values.slice(1)
-    const colunaQIndex = 16 // Coluna Q (índice 16)
+    const colunaQIndex = getColumnIndex(headers, "Origem") // Coluna Q
+
+    if (colunaQIndex === -1) return []
+
     const valores = new Set<string>()
 
     rows.forEach((row: any[]) => {
@@ -101,19 +161,97 @@ const TrafegoEngajamento: React.FC<TrafegoEngajamentoProps> = () => {
     return Array.from(valores).sort()
   }, [ga4ReceptivosData])
 
+  // Função para obter valores únicos da coluna Praça da aba GA4_receptivos
+  const valoresPracaGA4 = useMemo(() => {
+    if (!ga4ReceptivosData?.data?.values || ga4ReceptivosData.data.values.length <= 1) {
+      return []
+    }
+
+    const headers = ga4ReceptivosData.data.values[0]
+    const rows = ga4ReceptivosData.data.values.slice(1)
+    const pracaIndex = getColumnIndex(headers, "Praça")
+
+    if (pracaIndex === -1) return []
+
+    const valores = new Set<string>()
+
+    rows.forEach((row: any[]) => {
+      const valor = row[pracaIndex]?.toString().trim() || ""
+      if (valor) {
+        valores.add(valor)
+      }
+    })
+
+    return Array.from(valores).sort()
+  }, [ga4ReceptivosData])
+
+  // Função para obter valores únicos da coluna Praça da aba Eventos Receptivos
+  const valoresPracaEventos = useMemo(() => {
+    if (!eventosReceptivosData?.data?.values || eventosReceptivosData.data.values.length <= 1) {
+      return []
+    }
+
+    const headers = eventosReceptivosData.data.values[0]
+    const rows = eventosReceptivosData.data.values.slice(1)
+    const pracaIndex = getColumnIndex(headers, "Praça")
+
+    if (pracaIndex === -1) return []
+
+    const valores = new Set<string>()
+
+    rows.forEach((row: any[]) => {
+      const valor = row[pracaIndex]?.toString().trim() || ""
+      if (valor) {
+        valores.add(valor)
+      }
+    })
+
+    return Array.from(valores).sort()
+  }, [eventosReceptivosData])
+
+  // Valores únicos combinados de Praça
+  const valoresPraca = useMemo(() => {
+    const combined = new Set([...valoresPracaGA4, ...valoresPracaEventos])
+    return Array.from(combined).sort()
+  }, [valoresPracaGA4, valoresPracaEventos])
+
   // Função para verificar se a linha passa pelo filtro da coluna Q
-  const passaFiltroColunaQ = (row: any[]): boolean => {
+  const passaFiltroColunaQ = (row: any[], headers: string[]): boolean => {
     if (selectedColunaQ.length === 0) return true
     
-    const colunaQIndex = 16 // Coluna Q (índice 16)
+    const colunaQIndex = getColumnIndex(headers, "Origem") // Coluna Q
+    if (colunaQIndex === -1) return true
+    
     const valorColunaQ = row[colunaQIndex]?.toString().trim() || ""
     
     return selectedColunaQ.includes(valorColunaQ)
   }
 
+  // Função para verificar se a linha passa pelo filtro de Praça
+  const passaFiltroPraca = (row: any[], headers: string[]): boolean => {
+    if (selectedPraca.length === 0) return true
+    
+    const pracaIndex = getColumnIndex(headers, "Praça")
+    if (pracaIndex === -1) return true
+    
+    const valorPraca = row[pracaIndex]?.toString().trim() || ""
+    
+    return selectedPraca.includes(valorPraca)
+  }
+
   // Função para alternar seleção do filtro da coluna Q
   const toggleColunaQ = (valor: string) => {
     setSelectedColunaQ((prev) => {
+      if (prev.includes(valor)) {
+        return prev.filter((v) => v !== valor)
+      }
+      return [...prev, valor]
+    })
+  }
+
+  // Função para alternar seleção do filtro de Praça
+  const togglePraca = (valor: string) => {
+    setSelectedPraca((prev) => {
       if (prev.includes(valor)) {
         return prev.filter((v) => v !== valor)
       }
@@ -159,10 +297,19 @@ const TrafegoEngajamento: React.FC<TrafegoEngajamentoProps> = () => {
     const headers = ga4ReceptivosData.data.values[0]
     const rows = ga4ReceptivosData.data.values.slice(1)
 
-    // Índices das colunas - coluna D (índice 3) para plataformas
-    const dateIndex = headers.indexOf("Date") || 0
-    const plataformaIndex = 3 // Coluna D
-    const sessionsIndex = 8 // Coluna I para sessões
+    // Índices das colunas usando nome da coluna
+    const dateIndex = getColumnIndex(headers, "Date")
+    const plataformaIndex = getColumnIndex(headers, "Session source") // Coluna D
+    const sessionsIndex = getColumnIndex(headers, "Sessions") // Coluna I
+
+    if (dateIndex === -1 || plataformaIndex === -1 || sessionsIndex === -1) {
+      return {
+        veiculosDetalhados: [],
+        fontesPorPlataforma: {},
+        totalSessions: 0,
+        resumoPorData: {},
+      }
+    }
 
     const sourceData: { [key: string]: number } = {}
     const dataResumo: { [key: string]: number } = {}
@@ -177,7 +324,12 @@ const TrafegoEngajamento: React.FC<TrafegoEngajamentoProps> = () => {
       }
 
       // Aplicar filtro da coluna Q
-      if (!passaFiltroColunaQ(row)) {
+      if (!passaFiltroColunaQ(row, headers)) {
+        return
+      }
+
+      // Aplicar filtro de Praça
+      if (!passaFiltroPraca(row, headers)) {
         return
       }
 
@@ -213,7 +365,7 @@ const TrafegoEngajamento: React.FC<TrafegoEngajamentoProps> = () => {
       totalSessions,
       resumoPorData: dataResumo,
     }
-  }, [ga4ReceptivosData, dateRange, selectedColunaQ])
+  }, [ga4ReceptivosData, dateRange, selectedColunaQ, selectedPraca])
 
   const processedEventosData = useMemo(() => {
     if (!eventosReceptivosData?.data?.values || eventosReceptivosData.data.values.length <= 1) {
@@ -227,10 +379,18 @@ const TrafegoEngajamento: React.FC<TrafegoEngajamentoProps> = () => {
     const headers = eventosReceptivosData.data.values[0]
     const rows = eventosReceptivosData.data.values.slice(1)
 
-    // Índices das colunas - coluna C (índice 2) para tipo de evento, coluna F (índice 5) para contagem
-    const dateIndex = headers.indexOf("Date") || 0
-    const eventTypeIndex = 2 // Coluna C
-    const eventCountIndex = 5 // Coluna F
+    // Índices das colunas usando nome da coluna
+    const dateIndex = getColumnIndex(headers, "Date")
+    const eventTypeIndex = getColumnIndex(headers, "Parâmetro Ação") // Coluna D
+    const eventCountIndex = getColumnIndex(headers, "Event count") // Coluna G
+
+    if (dateIndex === -1 || eventTypeIndex === -1 || eventCountIndex === -1) {
+      return {
+        bbTrack: 0,
+        firstVisit: 0,
+        totalCTAs: 0,
+      }
+    }
 
     let bbTrackTotal = 0
     let firstVisitTotal = 0
@@ -240,6 +400,11 @@ const TrafegoEngajamento: React.FC<TrafegoEngajamentoProps> = () => {
       
       // Aplicar filtro de data
       if (!isDateInRange(date)) {
+        return
+      }
+
+      // Aplicar filtro de Praça
+      if (!passaFiltroPraca(row, headers)) {
         return
       }
 
@@ -257,24 +422,31 @@ const TrafegoEngajamento: React.FC<TrafegoEngajamentoProps> = () => {
       const ga4Headers = ga4ReceptivosData.data.values[0]
       const ga4Rows = ga4ReceptivosData.data.values.slice(1)
       
-      const ga4DateIndex = ga4Headers.indexOf("Date") || 0
-      const firstVisitIndex = 9 // Coluna J
+      const ga4DateIndex = getColumnIndex(ga4Headers, "Date")
+      const firstVisitIndex = getColumnIndex(ga4Headers, "New users") // Coluna J
 
-      ga4Rows.forEach((row: any[]) => {
-        const date = row[ga4DateIndex] || ""
-        
-        if (!isDateInRange(date)) {
-          return
-        }
+      if (ga4DateIndex !== -1 && firstVisitIndex !== -1) {
+        ga4Rows.forEach((row: any[]) => {
+          const date = row[ga4DateIndex] || ""
+          
+          if (!isDateInRange(date)) {
+            return
+          }
 
-        // Aplicar filtro da coluna Q
-        if (!passaFiltroColunaQ(row)) {
-          return
-        }
+          // Aplicar filtro da coluna Q
+          if (!passaFiltroColunaQ(row, ga4Headers)) {
+            return
+          }
 
-        const firstVisitCount = parseInt(row[firstVisitIndex]) || 0
-        firstVisitTotal += firstVisitCount
-      })
+          // Aplicar filtro de Praça
+          if (!passaFiltroPraca(row, ga4Headers)) {
+            return
+          }
+
+          const firstVisitCount = parseInt(row[firstVisitIndex]) || 0
+          firstVisitTotal += firstVisitCount
+        })
+      }
     }
 
     return {
@@ -282,7 +454,7 @@ const TrafegoEngajamento: React.FC<TrafegoEngajamentoProps> = () => {
       firstVisit: firstVisitTotal,
       totalCTAs: bbTrackTotal + firstVisitTotal,
     }
-  }, [eventosReceptivosData, ga4ReceptivosData, dateRange, selectedColunaQ])
+  }, [eventosReceptivosData, ga4ReceptivosData, dateRange, selectedColunaQ, selectedPraca])
 
   const processedResumoData = useMemo(() => {
     
@@ -306,11 +478,28 @@ const TrafegoEngajamento: React.FC<TrafegoEngajamentoProps> = () => {
     const headers = ga4ReceptivosData.data.values[0]
     const rows = ga4ReceptivosData.data.values.slice(1)
 
-    // Índices das colunas da nova planilha GA4_receptivos
-    const dateIndex = headers.indexOf("Date") || 0
-    const regionIndex = 4 // Coluna E
-    const deviceIndex = 7 // Coluna H
-    const sessionsIndex = 8 // Coluna I
+    // Índices das colunas usando nome da coluna
+    const dateIndex = getColumnIndex(headers, "Date")
+    const regionIndex = getColumnIndex(headers, "Region") // Coluna E
+    const deviceIndex = getColumnIndex(headers, "Device category") // Coluna H
+    const sessionsIndex = getColumnIndex(headers, "Sessions") // Coluna I
+
+    if (dateIndex === -1 || regionIndex === -1 || deviceIndex === -1 || sessionsIndex === -1) {
+      return {
+        receptivo: {
+          sessoesCampanha: 0,
+          cliquesSaibaMais: 0,
+          cliquesCTAs: 0,
+          duracaoSessoes: "00:00:00",
+          taxaRejeicao: 0,
+          cliquesWhatsapp: 0,
+          cliquesContrateAgora: 0,
+          cliquesFaleConosco: 0,
+        },
+        dispositivos: [],
+        dadosRegiao: {},
+      }
+    }
 
     let totalSessions = 0
     let totalSaibaMais = 0
@@ -334,7 +523,12 @@ const TrafegoEngajamento: React.FC<TrafegoEngajamentoProps> = () => {
       }
 
       // Aplicar filtro da coluna Q
-      if (!passaFiltroColunaQ(row)) {
+      if (!passaFiltroColunaQ(row, headers)) {
+        return
+      }
+
+      // Aplicar filtro de Praça
+      if (!passaFiltroPraca(row, headers)) {
         return
       }
 
@@ -383,7 +577,7 @@ const TrafegoEngajamento: React.FC<TrafegoEngajamentoProps> = () => {
     }
 
     return resultado
-  }, [ga4ReceptivosData, dateRange, selectedColunaQ])
+  }, [ga4ReceptivosData, dateRange, selectedColunaQ, selectedPraca])
 
 
   // Função para formatar números
@@ -503,7 +697,7 @@ if (receptivosError || eventosError) {
           <div className="col-span-3">
             <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
               <Filter className="w-4 h-4 mr-2" />
-              Filtro (Coluna Q)
+              Filtro (Origem)
             </label>
             <div className="flex flex-wrap gap-2">
               {valoresColunaQ.map((valor) => (
@@ -517,6 +711,29 @@ if (receptivosError || eventosError) {
                   }`}
                 >
                   {valor}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Filtro de Praça */}
+          <div className="col-span-3">
+            <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+              <MapPin className="w-4 h-4 mr-2" />
+              Praças
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {valoresPraca.map((praca) => (
+                <button
+                  key={praca}
+                  onClick={() => togglePraca(praca)}
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors duration-200 ${
+                    selectedPraca.includes(praca)
+                      ? "bg-green-100 text-green-800 border border-green-300"
+                      : "bg-gray-100 text-gray-600 border border-gray-300 hover:bg-gray-200"
+                  }`}
+                >
+                  {praca}
                 </button>
               ))}
             </div>
