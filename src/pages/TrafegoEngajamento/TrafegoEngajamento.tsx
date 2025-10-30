@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useState, useMemo, useRef } from "react"
-import { TrendingUp, Calendar, Users, BarChart3, MessageCircle, HandHeart, Filter, MapPin } from "lucide-react"
+import { TrendingUp, Calendar, Users, BarChart3, MessageCircle, HandHeart, Filter, MapPin, XCircle, TrendingDown, Clock } from "lucide-react"
 import Loading from "../../components/Loading/Loading"
 import PDFDownloadButton from "../../components/PDFDownloadButton/PDFDownloadButton"
 import { 
@@ -483,8 +483,10 @@ const TrafegoEngajamento: React.FC<TrafegoEngajamentoProps> = () => {
     const regionIndex = getColumnIndex(headers, "Region") // Coluna E
     const deviceIndex = getColumnIndex(headers, "Device category") // Coluna H
     const sessionsIndex = getColumnIndex(headers, "Sessions") // Coluna I
+    const bouncesIndex = getColumnIndex(headers, "Bounces")
+    const durationIndex = getColumnIndex(headers, "Average session duration")
 
-    if (dateIndex === -1 || regionIndex === -1 || deviceIndex === -1 || sessionsIndex === -1) {
+    if (dateIndex === -1 || regionIndex === -1 || deviceIndex === -1 || sessionsIndex === -1 || bouncesIndex === -1 || durationIndex === -1) {
       return {
         receptivo: {
           sessoesCampanha: 0,
@@ -510,6 +512,9 @@ const TrafegoEngajamento: React.FC<TrafegoEngajamentoProps> = () => {
     let totalWhatsapp = 0
     let totalContrateAgora = 0
     let totalFaleConosco = 0
+    let totalBounces = 0
+    let totalDurationSum = 0
+    let durationCount = 0
 
     const deviceData: { [key: string]: number } = {}
     const regionData: { [key: string]: number } = {}
@@ -535,10 +540,19 @@ const TrafegoEngajamento: React.FC<TrafegoEngajamentoProps> = () => {
       const sessions = Number.parseInt(row[sessionsIndex]) || 0
       const device = row[deviceIndex] || "Outros"
       const region = row[regionIndex] || "Outros"
+      const bounces = Number.parseInt(row[bouncesIndex]) || 0
+      const duration = Number.parseFloat(row[durationIndex]) || 0
 
       if (sessions > 0) {
         totalSessions += sessions
         validRows += sessions
+        totalBounces += bounces
+
+        // Duração média
+        if (duration > 0) {
+          totalDurationSum += duration
+          durationCount += 1
+        }
 
         // Dispositivos
         deviceData[device] = (deviceData[device] || 0) + sessions
@@ -561,6 +575,10 @@ const TrafegoEngajamento: React.FC<TrafegoEngajamentoProps> = () => {
       }))
       .sort((a, b) => b.sessoes - a.sessoes)
 
+    // Calcular taxa de rejeição e duração média
+    const taxaRejeicao = totalSessions > 0 ? (totalBounces / totalSessions) * 100 : 0
+    const duracaoMediaSessao = durationCount > 0 ? totalDurationSum / durationCount : 0
+
     const resultado = {
       receptivo: {
         sessoesCampanha: totalSessions,
@@ -574,6 +592,9 @@ const TrafegoEngajamento: React.FC<TrafegoEngajamentoProps> = () => {
       },
       dispositivos,
       dadosRegiao: regionData,
+      rejeicoes: totalBounces,
+      taxaRejeicao: taxaRejeicao,
+      duracaoMediaSessao: duracaoMediaSessao,
     }
 
     return resultado
@@ -772,8 +793,8 @@ if (receptivosError || eventosError) {
             </div>
           </div>
 
-          {/* Cards de Métricas - 3 cards ocupando 6 colunas */}
-          <div className="col-span-6 grid grid-cols-3 gap-3">
+          {/* Cards de Métricas - 6 cards ocupando 6 colunas */}
+          <div className="col-span-6 grid grid-cols-6 gap-3">
             <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-3">
               <div className="flex items-center justify-between">
                 <div>
@@ -808,6 +829,45 @@ if (receptivosError || eventosError) {
                   </p>
                 </div>
                 <HandHeart className="w-6 h-6 text-orange-600" />
+              </div>
+            </div>
+
+            {/* Card Rejeições */}
+            <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-lg p-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-medium text-red-600">Rejeições</p>
+                  <p className="text-lg font-bold text-red-900">
+                    {formatNumber(processedResumoData.rejeicoes)}
+                  </p>
+                </div>
+                <XCircle className="w-6 h-6 text-red-600" />
+              </div>
+            </div>
+
+            {/* Card Taxa de Rejeição */}
+            <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-medium text-purple-600">Taxa de Rejeição</p>
+                  <p className="text-lg font-bold text-purple-900">
+                    {processedResumoData.taxaRejeicao.toFixed(1)}%
+                  </p>
+                </div>
+                <TrendingDown className="w-6 h-6 text-purple-600" />
+              </div>
+            </div>
+
+            {/* Card Duração Média da Sessão */}
+            <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-lg p-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-medium text-indigo-600">Duração Média</p>
+                  <p className="text-lg font-bold text-indigo-900">
+                    {Math.round(processedResumoData.duracaoMediaSessao)} seg
+                  </p>
+                </div>
+                <Clock className="w-6 h-6 text-indigo-600" />
               </div>
             </div>
           </div>
