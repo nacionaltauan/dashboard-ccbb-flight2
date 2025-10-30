@@ -806,7 +806,7 @@ if (receptivosError || eventosError) {
           </div>
 
           {/* Cards de Métricas - 6 cards ocupando 6 colunas */}
-          <div className="col-span-6 grid grid-cols-7 gap-3">
+          <div className="col-span-12 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
             <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-3">
               <div className="flex items-center justify-between">
                 <div>
