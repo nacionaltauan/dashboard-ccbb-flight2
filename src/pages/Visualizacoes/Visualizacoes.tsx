@@ -76,7 +76,7 @@ const Visualizacoes: React.FC = () => {
     Google: "#5f27cd",
     Netflix: "#341f97",
     Meta: "#74b9ff",
-    Spotify: "#0984e3",
+    Spotify: "#1DB954",
     Kwai: "#fdcb6e",
     Band: "#e17055",
     "Catraca Livre": "#00b894",
@@ -342,14 +342,12 @@ const Visualizacoes: React.FC = () => {
     }
 
     // Filtro por praça
-    /*
     if (selectedPracas.length > 0) {
       filtered = filtered.filter((item) => selectedPracas.includes(item.praca))
     }
-    */
 
     return filtered
-  }, [processedData, dateRange, selectedPlatforms, selectedTiposCompra])
+  }, [processedData, dateRange, selectedPlatforms, selectedTiposCompra, selectedPracas])
 
   // Calcular métricas por plataforma
   const platformMetrics = useMemo(() => {

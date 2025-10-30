@@ -475,6 +475,7 @@ const TrafegoEngajamento: React.FC<TrafegoEngajamentoProps> = () => {
         rejeicoes: 0,
         taxaRejeicao: 0,
         duracaoMediaSessao: 0,
+        engagedSessions: 0,
       }
     }
 
@@ -488,8 +489,9 @@ const TrafegoEngajamento: React.FC<TrafegoEngajamentoProps> = () => {
     const sessionsIndex = getColumnIndex(headers, "Sessions") // Coluna I
     const bouncesIndex = getColumnIndex(headers, "Bounces")
     const durationIndex = getColumnIndex(headers, "Average session duration")
+    const engagedIndex = getColumnIndex(headers, "Engaged sessions")
 
-    if (dateIndex === -1 || regionIndex === -1 || deviceIndex === -1 || sessionsIndex === -1 || bouncesIndex === -1 || durationIndex === -1) {
+    if (dateIndex === -1 || regionIndex === -1 || deviceIndex === -1 || sessionsIndex === -1 || bouncesIndex === -1 || durationIndex === -1 || engagedIndex === -1) {
       return {
         receptivo: {
           sessoesCampanha: 0,
@@ -506,6 +508,7 @@ const TrafegoEngajamento: React.FC<TrafegoEngajamentoProps> = () => {
         rejeicoes: 0,
         taxaRejeicao: 0,
         duracaoMediaSessao: 0,
+        engagedSessions: 0,
       }
     }
 
@@ -521,6 +524,7 @@ const TrafegoEngajamento: React.FC<TrafegoEngajamentoProps> = () => {
     let totalBounces = 0
     let totalDurationSum = 0
     let durationCount = 0
+    let totalEngagedSessions = 0
 
     const deviceData: { [key: string]: number } = {}
     const regionData: { [key: string]: number } = {}
@@ -548,16 +552,17 @@ const TrafegoEngajamento: React.FC<TrafegoEngajamentoProps> = () => {
       const region = row[regionIndex] || "Outros"
       const bounces = Number.parseInt(row[bouncesIndex]) || 0
       const duration = Number.parseFloat(row[durationIndex]) || 0
+      const engaged = Number.parseInt(row[engagedIndex]) || 0
 
       if (sessions > 0) {
         totalSessions += sessions
         validRows += sessions
         totalBounces += bounces
+        totalEngagedSessions += engaged
 
-        // Duração média
+        // Duração média ponderada por sessões (acumula duration * sessions)
         if (duration > 0) {
-          totalDurationSum += duration
-          durationCount += 1
+          totalDurationSum += duration * sessions
         }
 
         // Dispositivos
@@ -583,7 +588,7 @@ const TrafegoEngajamento: React.FC<TrafegoEngajamentoProps> = () => {
 
     // Calcular taxa de rejeição e duração média
     const taxaRejeicao = totalSessions > 0 ? (totalBounces / totalSessions) * 100 : 0
-    const duracaoMediaSessao = durationCount > 0 ? totalDurationSum / durationCount : 0
+    const duracaoMediaSessao = totalSessions > 0 ? totalDurationSum / totalSessions : 0
 
     const resultado = {
       receptivo: {
@@ -601,6 +606,7 @@ const TrafegoEngajamento: React.FC<TrafegoEngajamentoProps> = () => {
       rejeicoes: totalBounces,
       taxaRejeicao: taxaRejeicao,
       duracaoMediaSessao: duracaoMediaSessao,
+      engagedSessions: totalEngagedSessions,
     }
 
     return resultado
@@ -800,7 +806,7 @@ if (receptivosError || eventosError) {
           </div>
 
           {/* Cards de Métricas - 6 cards ocupando 6 colunas */}
-          <div className="col-span-6 grid grid-cols-6 gap-3">
+          <div className="col-span-6 grid grid-cols-7 gap-3">
             <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-3">
               <div className="flex items-center justify-between">
                 <div>
@@ -835,6 +841,19 @@ if (receptivosError || eventosError) {
                   </p>
                 </div>
                 <HandHeart className="w-6 h-6 text-orange-600" />
+              </div>
+            </div>
+
+            {/* Card Sessões Engajadas */}
+            <div className="bg-gradient-to-br from-teal-50 to-teal-100 rounded-lg p-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-medium text-teal-600">Sessões Engajadas</p>
+                  <p className="text-lg font-bold text-teal-900">
+                    {formatNumber(processedResumoData.engagedSessions || 0)}
+                  </p>
+                </div>
+                <BarChart3 className="w-6 h-6 text-teal-600" />
               </div>
             </div>
 
