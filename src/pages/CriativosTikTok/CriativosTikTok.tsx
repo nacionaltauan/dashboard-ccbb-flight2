@@ -258,6 +258,7 @@ const CriativosTikTok: React.FC = () => {
       videoViews: filteredData.reduce((sum, item) => sum + item.videoViews, 0),
       videoViews100: filteredData.reduce((sum, item) => sum + item.videoViews100, 0),
       paidLikes: filteredData.reduce((sum, item) => sum + item.paidLikes, 0),
+      totalEngagements: filteredData.reduce((sum, item) => sum + item.paidLikes + item.paidComments + item.paidShares + item.paidFollows + item.profileVisits, 0),
       avgCpm: 0,
       avgCpc: 0,
       avgFrequency: 0,
@@ -395,7 +396,27 @@ const CriativosTikTok: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+        <div className="card-overlay rounded-lg shadow-lg p-4 text-center">
+          <div className="text-sm text-gray-600 mb-1">Investimento</div>
+          <div className="text-lg font-bold text-gray-900">{formatCurrency(totals.investment)}</div>
+        </div>
+
+        <div className="card-overlay rounded-lg shadow-lg p-4 text-center">
+          <div className="text-sm text-gray-600 mb-1">Impressões</div>
+          <div className="text-lg font-bold text-gray-900">{formatNumber(totals.impressions)}</div>
+        </div>
+
+        <div className="card-overlay rounded-lg shadow-lg p-4 text-center">
+          <div className="text-sm text-gray-600 mb-1">Cliques</div>
+          <div className="text-lg font-bold text-gray-900">{formatNumber(totals.clicks)}</div>
+        </div>
+
+        <div className="card-overlay rounded-lg shadow-lg p-4 text-center">
+          <div className="text-sm text-gray-600 mb-1">CPM</div>
+          <div className="text-lg font-bold text-gray-900">{formatCurrency(totals.avgCpm)}</div>
+        </div>
+
         <div className="card-overlay rounded-lg shadow-lg p-4 text-center">
           <div className="text-sm text-gray-600 mb-1">CPC</div>
           <div className="text-lg font-bold text-gray-900">{formatCurrency(totals.avgCpc)}</div>
@@ -407,8 +428,13 @@ const CriativosTikTok: React.FC = () => {
         </div>
 
         <div className="card-overlay rounded-lg shadow-lg p-4 text-center">
-          <div className="text-sm text-gray-600 mb-1">VTR</div>
-          <div className="text-lg font-bold text-gray-900">{totals.vtr.toFixed(2)}%</div>
+          <div className="text-sm text-gray-600 mb-1">Frequência</div>
+          <div className="text-lg font-bold text-gray-900">{totals.avgFrequency.toFixed(2)}</div>
+        </div>
+
+        <div className="card-overlay rounded-lg shadow-lg p-4 text-center">
+          <div className="text-sm text-gray-600 mb-1">Tx. Engaj.</div>
+          <div className="text-lg font-bold text-gray-900">{totals.impressions > 0 ? ((totals.totalEngagements / totals.impressions) * 100).toFixed(2) : 0}%</div>
         </div>
       </div>
 
