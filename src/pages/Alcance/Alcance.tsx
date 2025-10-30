@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useState, useEffect, useMemo, useRef } from "react"
-import { Users, Calendar, Filter, Info } from "lucide-react"
+import { Users, Calendar, Filter, Info, MapPin } from "lucide-react"
 import { useConsolidadoNacionalData } from "../../services/api"
 import PDFDownloadButton from "../../components/PDFDownloadButton/PDFDownloadButton"
 import Loading from "../../components/Loading/Loading"
