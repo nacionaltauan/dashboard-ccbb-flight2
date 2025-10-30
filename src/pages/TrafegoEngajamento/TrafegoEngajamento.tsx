@@ -472,6 +472,9 @@ const TrafegoEngajamento: React.FC<TrafegoEngajamentoProps> = () => {
         },
         dispositivos: [],
         dadosRegiao: {},
+        rejeicoes: 0,
+        taxaRejeicao: 0,
+        duracaoMediaSessao: 0,
       }
     }
 
@@ -500,6 +503,9 @@ const TrafegoEngajamento: React.FC<TrafegoEngajamentoProps> = () => {
         },
         dispositivos: [],
         dadosRegiao: {},
+        rejeicoes: 0,
+        taxaRejeicao: 0,
+        duracaoMediaSessao: 0,
       }
     }
 
