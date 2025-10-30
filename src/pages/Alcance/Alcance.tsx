@@ -382,14 +382,24 @@ const Alcance: React.FC = () => {
     format?: (value: number) => string
   }> = ({ title, data, getValue, format = formatNumber }) => {
     const maxValue = Math.max(...data.map(getValue))
+    const minValue = Math.min(...data.map(getValue).filter(v => v > 0))
+    
+    // Usar escala logarítmica para melhor visualização de grandes diferenças
+    const getLogHeight = (value: number) => {
+      if (value <= 0) return 0
+      const logValue = Math.log10(value)
+      const logMax = Math.log10(maxValue)
+      const logMin = Math.log10(minValue)
+      return ((logValue - logMin) / (logMax - logMin)) * 100
+    }
 
     return (
       <div className="space-y-4">
         <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
-        <div className="flex items-end space-x-2 h-32">
+        <div className="flex items-end space-x-2 h-64">
           {data.slice(0, 8).map((item, index) => {
             const value = getValue(item)
-            const height = maxValue > 0 ? (value / maxValue) * 100 : 0
+            const height = getLogHeight(value)
 
             return (
               <div key={index} className="flex-1 flex flex-col items-center space-y-1">
@@ -411,6 +421,9 @@ const Alcance: React.FC = () => {
               </div>
             )
           })}
+        </div>
+        <div className="text-xs text-gray-500 text-center">
+          * Escala logarítmica para melhor visualização das diferenças
         </div>
       </div>
     )

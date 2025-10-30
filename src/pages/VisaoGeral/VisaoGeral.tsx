@@ -75,11 +75,6 @@ const VisaoGeral: React.FC = () => {
     Default: "#6366f1",
   }
 
-  // Valores previstos para pacing
-  const impressoesPrevistas = 51241352;
-  const cliquesPrevistos = 258138;
-
-
   const availablePlatforms = useMemo(() => {
     const platforms = new Set<string>()
     processedData.forEach((item) => {
@@ -422,33 +417,6 @@ const VisaoGeral: React.FC = () => {
       currency: "BRL",
     })
   }
-  
-    // Componente para card de métrica com Pacing
-  const PacingMetricCard: React.FC<{
-    label: string;
-    value: number;
-    predictedValue: number;
-    format: (val: number) => string;
-    mainColorClass: string;
-  }> = ({ label, value, predictedValue, format, mainColorClass }) => {
-    const percentageDiff = predictedValue > 0 ? ((value - predictedValue) / predictedValue) * 100 : 0;
-    const isAbove = percentageDiff >= 0;
-    const diffColorClass = isAbove ? "text-green-600" : "text-red-600";
-    const arrow = isAbove ? "↑" : "↓";
-
-    return (
-      <div className="card-overlay rounded-lg shadow-lg p-4 text-center min-h-[100px] flex flex-col justify-center">
-        <div className="text-sm text-gray-600 mb-1">{label}</div>
-        <div className={`text-xl font-bold ${mainColorClass}`}>{format(value)}</div>
-        <div className="text-xs text-gray-500 mt-1">
-          <span>Previsto: {format(predictedValue)}</span>
-          <span className={`ml-2 font-semibold ${diffColorClass}`}>
-             ({arrow} {Math.abs(percentageDiff).toFixed(1)}%)
-          </span>
-        </div>
-      </div>
-    );
-  };
 
 
   // Componente de gráfico de barras horizontal
@@ -670,13 +638,10 @@ const VisaoGeral: React.FC = () => {
           <div className="text-xl font-bold text-green-600">{formatCurrency(totals.investment)}</div>
         </div>
 
-        <PacingMetricCard
-            label="Impressões"
-            value={totals.impressions}
-            predictedValue={impressoesPrevistas}
-            format={formatFullNumber}
-            mainColorClass="text-blue-600"
-        />
+        <div className="card-overlay rounded-lg shadow-lg p-4 text-center min-h-[80px] flex flex-col justify-center">
+          <div className="text-sm text-gray-600 mb-1">Impressões</div>
+          <div className="text-xl font-bold text-blue-600">{formatFullNumber(totals.impressions)}</div>
+        </div>
 
         <div className="card-overlay rounded-lg shadow-lg p-4 text-center min-h-[80px] flex flex-col justify-center">
           <div className="text-sm text-gray-600 mb-1">CPM</div>
@@ -693,13 +658,10 @@ const VisaoGeral: React.FC = () => {
           <div className="text-xl font-bold text-red-600">{totals.frequency.toFixed(2)}</div>
         </div>
 
-        <PacingMetricCard
-            label="Cliques"
-            value={totals.clicks}
-            predictedValue={cliquesPrevistos}
-            format={formatFullNumber}
-            mainColorClass="text-teal-600"
-        />
+        <div className="card-overlay rounded-lg shadow-lg p-4 text-center min-h-[80px] flex flex-col justify-center">
+          <div className="text-sm text-gray-600 mb-1">Cliques</div>
+          <div className="text-xl font-bold text-teal-600">{formatFullNumber(totals.clicks)}</div>
+        </div>
       </div>
 
       {/* Gráficos de Barras */}

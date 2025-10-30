@@ -24,7 +24,7 @@ const Login: React.FC = () => {
       <div
         className="fixed inset-0 bg-cover bg-center bg-no-repeat z-0"
         style={{
-          backgroundImage: "url('/images/banner-background.webp')",
+          backgroundImage: "url('/images/Card_Banner_CCBB.png')",
         }}
       >
         <div className="absolute inset-0 bg-white/80 backdrop-blur-sm"></div>
