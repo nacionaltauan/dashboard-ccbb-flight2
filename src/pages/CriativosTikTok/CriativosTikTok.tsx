@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useState, useEffect, useMemo, useRef } from "react"
-import { Calendar, MapPin } from "lucide-react"
+import { Calendar, MapPin, Users } from "lucide-react"
 import { useTikTokNacionalData } from "../../services/api"
 import Loading from "../../components/Loading/Loading"
 import { googleDriveApi } from "../../services/googleDriveApi"
@@ -45,6 +45,8 @@ const CriativosTikTok: React.FC = () => {
   const [dateRange, setDateRange] = useState<{ start: string; end: string }>({ start: "", end: "" })
   const [selectedPracas, setSelectedPracas] = useState<string[]>([])
   const [availablePracas, setAvailablePracas] = useState<string[]>([])
+  const [selectedTipos, setSelectedTipos] = useState<string[]>([])
+  const [availableTipos, setAvailableTipos] = useState<string[]>([])
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage] = useState(10)
   
@@ -151,6 +153,15 @@ const CriativosTikTok: React.FC = () => {
     })
     const pracas = Array.from(pracaSet).filter(Boolean).sort()
     setAvailablePracas(pracas)
+
+    // Detectar tipos disponíveis baseados nos criativos
+    const tipoSet = new Set<string>()
+    processed.forEach((item) => {
+      const detectedTipo = detectTipoFromCreative(item.adName)
+      tipoSet.add(detectedTipo)
+    })
+    const tipos = Array.from(tipoSet).filter(Boolean).sort()
+    setAvailableTipos(tipos)
   }, [apiData])
 
   // Função para detectar praça baseada no nome do criativo
@@ -169,6 +180,11 @@ const CriativosTikTok: React.FC = () => {
       return "Belo Horizonte"
     }
     
+    // Regras para Rio de Janeiro
+    if (upperAdName.includes("RJ")) {
+      return "Rio de Janeiro"
+    }
+    
     return null
   }
 
@@ -178,6 +194,29 @@ const CriativosTikTok: React.FC = () => {
         return prev.filter((p) => p !== praca)
       }
       return [...prev, praca]
+    })
+  }
+
+  // Função para detectar tipo baseado no nome do criativo
+  const detectTipoFromCreative = (adName: string): string => {
+    if (!adName) return "Proprietários"
+    
+    const upperAdName = adName.toUpperCase()
+    
+    // Regra para Influencers
+    if (upperAdName.includes("TTCX")) {
+      return "Influencers"
+    }
+    
+    return "Proprietários"
+  }
+
+  const toggleTipo = (tipo: string) => {
+    setSelectedTipos((prev) => {
+      if (prev.includes(tipo)) {
+        return prev.filter((t) => t !== tipo)
+      }
+      return [...prev, tipo]
     })
   }
 
@@ -200,6 +239,14 @@ const CriativosTikTok: React.FC = () => {
       filtered = filtered.filter((item) => {
         const detectedPraca = detectPracaFromCreative(item.adName)
         return detectedPraca && selectedPracas.includes(detectedPraca)
+      })
+    }
+
+    // Filtro por tipo (Influencers/Proprietários)
+    if (selectedTipos.length > 0) {
+      filtered = filtered.filter((item) => {
+        const detectedTipo = detectTipoFromCreative(item.adName)
+        return selectedTipos.includes(detectedTipo)
       })
     }
 
@@ -239,7 +286,7 @@ const CriativosTikTok: React.FC = () => {
     finalData.sort((a, b) => b.cost - a.cost)
 
     return finalData
-  }, [processedData, dateRange, selectedPracas])
+  }, [processedData, dateRange, selectedPracas, selectedTipos])
 
   const paginatedData = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage
@@ -349,7 +396,7 @@ const CriativosTikTok: React.FC = () => {
       </div>
 
       <div className="card-overlay rounded-lg shadow-lg p-4">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
               <Calendar className="w-4 h-4 mr-2" />
@@ -388,6 +435,28 @@ const CriativosTikTok: React.FC = () => {
                   }`}
                 >
                   {praca}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+              <Users className="w-4 h-4 mr-2" />
+              Tipo
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {availableTipos.map((tipo) => (
+                <button
+                  key={tipo}
+                  onClick={() => toggleTipo(tipo)}
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors duration-200 ${
+                    selectedTipos.includes(tipo)
+                      ? "bg-pink-100 text-pink-800 border border-pink-300"
+                      : "bg-gray-100 text-gray-600 border border-gray-300 hover:bg-gray-200"
+                  }`}
+                >
+                  {tipo}
                 </button>
               ))}
             </div>

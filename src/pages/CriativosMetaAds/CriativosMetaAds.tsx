@@ -445,6 +445,11 @@ const CriativosMeta: FC = () => {
       return "Belo Horizonte"
     }
     
+    // Regras para Rio de Janeiro
+    if (upperCreative.includes("RJ")) {
+      return "Rio de Janeiro"
+    }
+    
     return null
   }
 
