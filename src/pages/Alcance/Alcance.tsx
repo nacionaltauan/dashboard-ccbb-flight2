@@ -21,6 +21,7 @@ interface ProcessedData {
   visualizacoes100: number
   cpv: number
   vtr100: number
+  praca: string
 }
 
 interface PlatformMetrics {
@@ -150,6 +151,7 @@ const Alcance: React.FC = () => {
               visualizacoes100: parseInteger(item["Video completions "]) || parseInteger(item["Video views "]), // Note o espaço no final
               cpv: 0, // Será calculado depois
               vtr100: 0, // Será calculado depois
+              praca: item["Praça"] || "Outros",
             } as ProcessedData
           })
           .filter((item: ProcessedData) => item.date && item.impressions > 0)
@@ -189,13 +191,24 @@ const Alcance: React.FC = () => {
         const platforms = Array.from(platformSet).filter(Boolean)
         setAvailablePlatforms(platforms)
         setSelectedPlatforms([])
+
+        // Extrair praças únicas
+        const pracaSet = new Set<string>()
+        processed.forEach((item) => {
+          if (item.praca) {
+            pracaSet.add(item.praca)
+          }
+        })
+        const pracas = Array.from(pracaSet).filter(Boolean)
+        setAvailablePracas(pracas)
+        setSelectedPracas([])
       } catch (error) {
         console.error("Erro ao processar dados:", error)
       }
     }
   }, [apiData])
 
-  // Filtrar dados por data e plataforma
+  // Filtrar dados por data, plataforma e praça
   const filteredData = useMemo(() => {
     let filtered = processedData
 
@@ -222,8 +235,13 @@ const Alcance: React.FC = () => {
       filtered = filtered.filter((item) => selectedPlatforms.includes(item.platform))
     }
 
+    // Filtro por praça
+    if (selectedPracas.length > 0) {
+      filtered = filtered.filter((item) => selectedPracas.includes(item.praca))
+    }
+
     return filtered
-  }, [processedData, dateRange, selectedPlatforms])
+  }, [processedData, dateRange, selectedPlatforms, selectedPracas])
 
   // Calcular métricas por plataforma
   const platformMetrics = useMemo(() => {
@@ -321,6 +339,16 @@ const Alcance: React.FC = () => {
         return prev.filter((p) => p !== platform)
       }
       return [...prev, platform]
+    })
+  }
+
+  // Função para alternar seleção de praça
+  const togglePraca = (praca: string) => {
+    setSelectedPracas((prev) => {
+      if (prev.includes(praca)) {
+        return prev.filter((p) => p !== praca)
+      }
+      return [...prev, praca]
     })
   }
 
@@ -508,6 +536,29 @@ const Alcance: React.FC = () => {
                   }}
                 >
                   {platform}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Filtro de Praça */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+              <MapPin className="w-4 h-4 mr-2" />
+              Praça
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {availablePracas.map((praca) => (
+                <button
+                  key={praca}
+                  onClick={() => togglePraca(praca)}
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors duration-200 ${
+                    selectedPracas.includes(praca)
+                      ? "bg-green-100 text-green-800 border border-green-300"
+                      : "bg-gray-100 text-gray-600 border border-gray-300 hover:bg-gray-200"
+                  }`}
+                >
+                  {praca}
                 </button>
               ))}
             </div>
