@@ -538,14 +538,11 @@ const CriativosTikTok: React.FC = () => {
                 <th className="text-right py-3 px-4 font-semibold min-w-[7.5rem]">Alcance</th>
                 <th className="text-right py-3 px-4 font-semibold min-w-[7.5rem]">Cliques</th>
                 <th className="text-right py-3 px-4 font-semibold min-w-[7.5rem]">Views 100%</th>
-                <th className="text-right py-3 px-4 font-semibold min-w-[7.5rem]">Likes</th>
                 <th className="text-right py-3 px-4 font-semibold min-w-[7.5rem]">Tx. Engaj.</th>
                 <th className="text-right py-3 px-4 font-semibold min-w-[7.5rem]">CPM</th>
                 <th className="text-right py-3 px-4 font-semibold min-w-[4rem] text-[15px]">Δ CPM</th>
                 <th className="text-right py-3 px-4 font-semibold min-w-[7.5rem]">CPC</th>
                 <th className="text-right py-3 px-4 font-semibold min-w-[4rem] text-[15px]">Δ CPC</th>
-                <th className="text-right py-3 px-4 font-semibold min-w-[7.5rem]">CTR</th>
-                <th className="text-right py-3 px-4 font-semibold min-w-[4rem] text-[15px]">Δ CTR</th>
                 <th className="text-right py-3 px-4 font-semibold min-w-[7.5rem]">VTR</th>
                 <th className="text-right py-3 px-4 font-semibold min-w-[4rem] text-[15px]">Δ VTR</th>
               </tr>
@@ -556,7 +553,6 @@ const CriativosTikTok: React.FC = () => {
                 const txEngaj = creative.impressions > 0 ? ((creative.paidLikes + creative.paidComments + creative.paidShares + creative.paidFollows + creative.profileVisits) / creative.impressions) * 100 : 0
                 const cpm = creative.impressions > 0 ? creative.cost / (creative.impressions / 1000) : 0
                 const cpc = creative.clicks > 0 ? creative.cost / creative.clicks : 0
-                const ctr = creative.impressions > 0 ? (creative.clicks / creative.impressions) * 100 : 0
                 const driveMediaData = googleDriveApi.findMediaForCreative(creative.adName, creativeMedias)
                 const tiktokThumbnail = creative.videoThumbnailUrl
                 
@@ -564,7 +560,6 @@ const CriativosTikTok: React.FC = () => {
                 const benchmark = getBenchmarkData(creative)
                 const cpmVariation = benchmark ? calculateVariation(cpm, benchmark.cpm, 'cost') : { value: "-", color: "text-gray-500" }
                 const cpcVariation = benchmark ? calculateVariation(cpc, benchmark.cpc, 'cost') : { value: "-", color: "text-gray-500" }
-                const ctrVariation = benchmark ? calculateVariation(ctr, benchmark.ctr, 'performance') : { value: "-", color: "text-gray-500" }
                 const vtrVariation = benchmark ? calculateVariation(vtr, benchmark.vtr, 'performance') : { value: "-", color: "text-gray-500" }
 
                 return (
@@ -636,7 +631,6 @@ const CriativosTikTok: React.FC = () => {
                     <td className="py-3 px-4 text-right min-w-[7.5rem]">{formatNumber(creative.reach)}</td>
                     <td className="py-3 px-4 text-right min-w-[7.5rem]">{formatNumber(creative.clicks)}</td>
                     <td className="py-3 px-4 text-right min-w-[7.5rem]">{formatNumber(creative.videoViews100)}</td>
-                    <td className="py-3 px-4 text-right min-w-[7.5rem]">{formatNumber(creative.paidLikes)}</td>
                     <td className="py-3 px-4 text-right min-w-[7.5rem]">{txEngaj.toFixed(2)}%</td>
                     <td className="py-3 px-4 text-right min-w-[7.5rem]">{formatCurrency(cpm)}</td>
                     <td className="py-3 px-4 text-right min-w-[4rem] text-[15px]">
@@ -645,10 +639,6 @@ const CriativosTikTok: React.FC = () => {
                     <td className="py-3 px-4 text-right min-w-[7.5rem]">{formatCurrency(cpc)}</td>
                     <td className="py-3 px-4 text-right min-w-[4rem] text-[15px]">
                       <span className={cpcVariation.color}>{cpcVariation.value}</span>
-                    </td>
-                    <td className="py-3 px-4 text-right min-w-[7.5rem]">{ctr.toFixed(2)}%</td>
-                    <td className="py-3 px-4 text-right min-w-[4rem] text-[15px]">
-                      <span className={ctrVariation.color}>{ctrVariation.value}</span>
                     </td>
                     <td className="py-3 px-4 text-right min-w-[7.5rem]">{vtr.toFixed(2)}%</td>
                     <td className="py-3 px-4 text-right min-w-[4rem] text-[15px]">
