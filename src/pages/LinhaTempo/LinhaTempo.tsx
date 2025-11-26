@@ -89,13 +89,12 @@ const LinhaTempo: React.FC = () => {
     return new Date(Number.parseInt(year), Number.parseInt(month) - 1, Number.parseInt(day))
   }
 
-  // Effect para carregar dados do Flight 1
+// Effect para carregar dados do Flight 1
   useEffect(() => {
     const loadFlight1 = async () => {
       try {
         const result = await fetchFlight1Data()
         if (result?.values && Array.isArray(result.values)) {
-          // Assume que a primeira linha pode ser cabeçalho ou dados, ajustado para remover cabeçalho se necessário
           // A planilha tem cabeçalhos na linha 1? O código abaixo assume que sim e remove (slice(1))
           const rows = result.values.slice(1)
           
@@ -105,7 +104,7 @@ const LinhaTempo: React.FC = () => {
             custo: Number(row[2]?.toString().replace(/[R$\s.]/g, "").replace(",", ".") || 0),
             impressoes: Number(row[3]?.toString().replace(/[.\s]/g, "") || 0),
             cliques: Number(row[4]?.toString().replace(/[.\s]/g, "") || 0),
-          })).filter(item => item.veiculo !== "")
+          })).filter((item: Flight1Data) => item.veiculo !== "") // <--- CORREÇÃO AQUI
           
           setFlight1Data(parsedData)
         }
