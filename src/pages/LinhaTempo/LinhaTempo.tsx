@@ -5,6 +5,7 @@ import { useState, useEffect, useMemo, useRef } from "react"
 import { ResponsiveLine } from "@nivo/line"
 import { Calendar, Filter, TrendingUp, Play, Info, DollarSign, MousePointer, Eye, BarChart3, Target, Percent, MapPin } from "lucide-react"
 import { useConsolidadoNacionalData } from "../../services/api"
+import { useFlight1Data } from "../../services/benchmarkApi"
 import PDFDownloadButton from "../../components/PDFDownloadButton/PDFDownloadButton"
 import AnaliseSemanal from "./components/AnaliseSemanal"
 import Loading from "../../components/Loading/Loading"
@@ -49,6 +50,7 @@ interface VehicleEntry {
 const LinhaTempo: React.FC = () => {
   const contentRef = useRef<HTMLDivElement>(null)
   const { data: apiData, loading, error } = useConsolidadoNacionalData()
+  const { data: flight1Data } = useFlight1Data()
   const [processedData, setProcessedData] = useState<DataPoint[]>([])
   const [dateRange, setDateRange] = useState<{ start: string; end: string }>({ start: "", end: "" })
   const [selectedVehicles, setSelectedVehicles] = useState<string[]>([])
@@ -332,6 +334,63 @@ const LinhaTempo: React.FC = () => {
   const ctr = useMemo(() => (totalImpressions > 0 ? (totalClicks / totalImpressions) * 100 : 0), [totalClicks, totalImpressions])
   const cpm = useMemo(() => (totalImpressions > 0 ? (totalInvestment / totalImpressions) * 1000 : 0), [totalInvestment, totalImpressions])
 
+  // Calcular métricas do Flight 1 baseado nos filtros
+  const flight1Metrics = useMemo(() => {
+    if (!flight1Data || flight1Data.length === 0) {
+      return {
+        custoTotal: 0,
+        impressoesTotal: 0,
+        cliquesTotal: 0,
+        cpc: 0,
+        ctr: 0,
+        cpm: 0,
+      }
+    }
+
+    // Filtrar dados baseado nos filtros ativos
+    // IGNORAR filtro de data (dateRange) - comparativo é histórico e fixo
+    let filtered = flight1Data
+
+    // Filtrar por veículos (se houver filtro)
+    if (selectedVehicles.length > 0) {
+      filtered = filtered.filter((item) => {
+        // Normalizar nomes de veículos para matching
+        const itemVeiculo = item.veiculo.toUpperCase().trim()
+        return selectedVehicles.some((vehicle) => {
+          const vehicleUpper = vehicle.toUpperCase().trim()
+          return itemVeiculo === vehicleUpper || itemVeiculo.includes(vehicleUpper) || vehicleUpper.includes(itemVeiculo)
+        })
+      })
+    }
+
+    // Filtrar por praças (se houver filtro)
+    if (selectedPracas.length > 0) {
+      filtered = filtered.filter((item) => {
+        const itemPraca = item.praca.trim()
+        return selectedPracas.some((praca) => praca.trim() === itemPraca)
+      })
+    }
+
+    // Somar valores absolutos das linhas filtradas
+    const custoTotal = filtered.reduce((sum, item) => sum + (item.custo || 0), 0)
+    const impressoesTotal = filtered.reduce((sum, item) => sum + (item.impressoes || 0), 0)
+    const cliquesTotal = filtered.reduce((sum, item) => sum + (item.cliques || 0), 0)
+
+    // Calcular taxas a partir dos totais
+    const flight1CPC = cliquesTotal > 0 ? custoTotal / cliquesTotal : 0
+    const flight1CTR = impressoesTotal > 0 ? (cliquesTotal / impressoesTotal) * 100 : 0
+    const flight1CPM = impressoesTotal > 0 ? (custoTotal / impressoesTotal) * 1000 : 0
+
+    return {
+      custoTotal,
+      impressoesTotal,
+      cliquesTotal,
+      cpc: flight1CPC,
+      ctr: flight1CTR,
+      cpm: flight1CPM,
+    }
+  }, [flight1Data, selectedVehicles, selectedPracas])
+
   // Funções de formatação atualizadas e novas
   const formatCurrency = (value: number): string => {
     return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -343,6 +402,57 @@ const LinhaTempo: React.FC = () => {
 
   const formatPercentage = (value: number): string => {
     return `${value.toFixed(2).replace(".", ",")}%`
+  }
+
+  // Funções para calcular variações por tipo de métrica
+  const calculateVolumeVariation = (current: number, reference: number): { value: string; color: string } => {
+    if (reference === 0 || isNaN(reference) || !isFinite(reference)) {
+      return { value: "", color: "" }
+    }
+    const variation = ((current / reference) - 1) * 100
+    const isPositive = variation > 0
+    return {
+      value: `${variation >= 0 ? "+" : ""}${variation.toFixed(2)}%`,
+      color: isPositive ? "text-green-600" : "text-red-600"
+    }
+  }
+
+  const calculateRateVariation = (current: number, reference: number): { value: string; color: string } => {
+    if (isNaN(reference) || !isFinite(reference)) {
+      return { value: "", color: "" }
+    }
+    const difference = current - reference
+    const isPositive = difference > 0
+    return {
+      value: `${difference >= 0 ? "+" : ""}${difference.toFixed(2)} p.p.`,
+      color: isPositive ? "text-green-600" : "text-red-600"
+    }
+  }
+
+  const calculateCostVariation = (current: number, reference: number): { value: string; color: string } => {
+    if (isNaN(reference) || !isFinite(reference)) {
+      return { value: "", color: "" }
+    }
+    const difference = current - reference
+    // Lógica invertida: negativo (mais barato) = verde (bom), positivo (mais caro) = vermelho (ruim)
+    const isBetter = difference < 0
+    return {
+      value: `${difference >= 0 ? "+" : ""}${formatCurrency(Math.abs(difference))}`,
+      color: isBetter ? "text-green-600" : "text-red-600"
+    }
+  }
+
+  // Função para formatar valor de referência do Flight 1
+  const formatFlight1Reference = (value: number, type: 'currency' | 'number' | 'percentage'): string => {
+    if (value === 0 || isNaN(value) || !isFinite(value)) return "N/A"
+    
+    if (type === 'currency') {
+      return formatCurrency(value)
+    } else if (type === 'percentage') {
+      return formatPercentage(value)
+    } else {
+      return formatFullNumber(value)
+    }
   }
   
   // Função para formatar valores do eixo Y e tooltip
@@ -523,27 +633,72 @@ const LinhaTempo: React.FC = () => {
         <div className="card-overlay rounded-lg shadow-lg p-4">
           <div className="flex items-center">
             <div className="p-2 bg-green-100 rounded-lg"><DollarSign className="w-5 h-5 text-green-600" /></div>
-            <div className="ml-3">
+            <div className="ml-3 flex-1">
               <p className="text-sm font-medium text-gray-600">Investimento Total</p>
               <p className="text-xl font-bold text-gray-900">{formatCurrency(totalInvestment)}</p>
+              {flight1Metrics.custoTotal > 0 && (
+                <div className="mt-1 flex items-center gap-2 flex-wrap">
+                  {(() => {
+                    const variation = calculateVolumeVariation(totalInvestment, flight1Metrics.custoTotal)
+                    return variation.value ? (
+                      <span className={`text-xs font-medium ${variation.color}`}>
+                        {variation.value}
+                      </span>
+                    ) : null
+                  })()}
+                  <span className="text-xs text-gray-500">
+                    | Ref: {formatFlight1Reference(flight1Metrics.custoTotal, 'currency')}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </div>
         <div className="card-overlay rounded-lg shadow-lg p-4">
           <div className="flex items-center">
             <div className="p-2 bg-blue-100 rounded-lg"><Eye className="w-5 h-5 text-blue-600" /></div>
-            <div className="ml-3">
+            <div className="ml-3 flex-1">
               <p className="text-sm font-medium text-gray-600">Total de Impressões</p>
               <p className="text-xl font-bold text-gray-900">{formatFullNumber(totalImpressions)}</p>
+              {flight1Metrics.impressoesTotal > 0 && (
+                <div className="mt-1 flex items-center gap-2 flex-wrap">
+                  {(() => {
+                    const variation = calculateVolumeVariation(totalImpressions, flight1Metrics.impressoesTotal)
+                    return variation.value ? (
+                      <span className={`text-xs font-medium ${variation.color}`}>
+                        {variation.value}
+                      </span>
+                    ) : null
+                  })()}
+                  <span className="text-xs text-gray-500">
+                    | Ref: {formatFlight1Reference(flight1Metrics.impressoesTotal, 'number')}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </div>
         <div className="card-overlay rounded-lg shadow-lg p-4">
           <div className="flex items-center">
             <div className="p-2 bg-purple-100 rounded-lg"><MousePointer className="w-5 h-5 text-purple-600" /></div>
-            <div className="ml-3">
+            <div className="ml-3 flex-1">
               <p className="text-sm font-medium text-gray-600">Total de Cliques</p>
               <p className="text-xl font-bold text-gray-900">{formatFullNumber(totalClicks)}</p>
+              {flight1Metrics.cliquesTotal > 0 && (
+                <div className="mt-1 flex items-center gap-2 flex-wrap">
+                  {(() => {
+                    const variation = calculateVolumeVariation(totalClicks, flight1Metrics.cliquesTotal)
+                    return variation.value ? (
+                      <span className={`text-xs font-medium ${variation.color}`}>
+                        {variation.value}
+                      </span>
+                    ) : null
+                  })()}
+                  <span className="text-xs text-gray-500">
+                    | Ref: {formatFlight1Reference(flight1Metrics.cliquesTotal, 'number')}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -551,27 +706,72 @@ const LinhaTempo: React.FC = () => {
         <div className="card-overlay rounded-lg shadow-lg p-4">
           <div className="flex items-center">
             <div className="p-2 bg-yellow-100 rounded-lg"><MousePointer className="w-5 h-5 text-yellow-600" /></div>
-            <div className="ml-3">
+            <div className="ml-3 flex-1">
               <p className="text-sm font-medium text-gray-600">CPC</p>
               <p className="text-xl font-bold text-gray-900">{formatCurrency(cpc)}</p>
+              {flight1Metrics.cpc > 0 && (
+                <div className="mt-1 flex items-center gap-2 flex-wrap">
+                  {(() => {
+                    const variation = calculateCostVariation(cpc, flight1Metrics.cpc)
+                    return variation.value ? (
+                      <span className={`text-xs font-medium ${variation.color}`}>
+                        {variation.value}
+                      </span>
+                    ) : null
+                  })()}
+                  <span className="text-xs text-gray-500">
+                    | Ref: {formatFlight1Reference(flight1Metrics.cpc, 'currency')}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </div>
         <div className="card-overlay rounded-lg shadow-lg p-4">
           <div className="flex items-center">
             <div className="p-2 bg-indigo-100 rounded-lg"><Percent className="w-5 h-5 text-indigo-600" /></div>
-            <div className="ml-3">
+            <div className="ml-3 flex-1">
               <p className="text-sm font-medium text-gray-600">CTR</p>
               <p className="text-xl font-bold text-gray-900">{formatPercentage(ctr)}</p>
+              {flight1Metrics.ctr > 0 && (
+                <div className="mt-1 flex items-center gap-2 flex-wrap">
+                  {(() => {
+                    const variation = calculateRateVariation(ctr, flight1Metrics.ctr)
+                    return variation.value ? (
+                      <span className={`text-xs font-medium ${variation.color}`}>
+                        {variation.value}
+                      </span>
+                    ) : null
+                  })()}
+                  <span className="text-xs text-gray-500">
+                    | Ref: {formatFlight1Reference(flight1Metrics.ctr, 'percentage')}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </div>
         <div className="card-overlay rounded-lg shadow-lg p-4">
           <div className="flex items-center">
             <div className="p-2 bg-red-100 rounded-lg"><Target className="w-5 h-5 text-red-600" /></div>
-            <div className="ml-3">
+            <div className="ml-3 flex-1">
               <p className="text-sm font-medium text-gray-600">CPM</p>
               <p className="text-xl font-bold text-gray-900">{formatCurrency(cpm)}</p>
+              {flight1Metrics.cpm > 0 && (
+                <div className="mt-1 flex items-center gap-2 flex-wrap">
+                  {(() => {
+                    const variation = calculateCostVariation(cpm, flight1Metrics.cpm)
+                    return variation.value ? (
+                      <span className={`text-xs font-medium ${variation.color}`}>
+                        {variation.value}
+                      </span>
+                    ) : null
+                  })()}
+                  <span className="text-xs text-gray-500">
+                    | Ref: {formatFlight1Reference(flight1Metrics.cpm, 'currency')}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </div>

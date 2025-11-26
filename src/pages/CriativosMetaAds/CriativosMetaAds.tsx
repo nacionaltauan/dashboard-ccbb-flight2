@@ -450,6 +450,11 @@ const CriativosMeta: FC = () => {
       return "Rio de Janeiro"
     }
     
+    // Regras para Salvador
+    if (upperCreative.includes("SSA")) {
+      return "Salvador"
+    }
+    
     return null
   }
 
