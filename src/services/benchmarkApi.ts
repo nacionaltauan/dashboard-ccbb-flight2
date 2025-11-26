@@ -1,7 +1,7 @@
 import React from "react"
 import { apiNacional } from "./api"
 
-// Interface para dados de benchmark
+// Interface para dados de benchmark existentes (mantendo compatibilidade)
 export interface BenchmarkData {
   veiculo: string
   tipoMidia: string
@@ -12,7 +12,16 @@ export interface BenchmarkData {
   completionRate: number
 }
 
-// Função para buscar dados de benchmark
+// NOVA INTERFACE para o Flight 1 (Comparativo)
+export interface Flight1Data {
+  veiculo: string
+  praca: string
+  custo: number
+  impressoes: number
+  cliques: number
+}
+
+// Função para buscar dados de benchmark (existente)
 export const fetchBenchmarkNacionalData = async () => {
   try {
     const response = await apiNacional.get(
@@ -25,7 +34,20 @@ export const fetchBenchmarkNacionalData = async () => {
   }
 }
 
-// Hook para dados de benchmark
+// NOVA FUNÇÃO: Busca dados da aba Bench_ccbbf1
+export const fetchFlight1Data = async () => {
+  try {
+    const response = await apiNacional.get(
+      "/google/sheets/1tdFuCDyh1RDvhv9EGoZVJTBiHLSSOk-uUjp5rSbMUgg/data?range=Bench_ccbbf1!A:E",
+    )
+    return response.data
+  } catch (error) {
+    console.error("Erro ao buscar dados do Flight 1:", error)
+    throw error
+  }
+}
+
+// Hook para dados de benchmark (existente)
 export const useBenchmarkNacionalData = () => {
   const [data, setData] = React.useState<any>(null)
   const [loading, setLoading] = React.useState(true)
@@ -51,7 +73,7 @@ export const useBenchmarkNacionalData = () => {
   return { data, loading, error, refetch: loadData }
 }
 
-// Função para processar dados de benchmark
+// Função para processar dados de benchmark (existente)
 export const processBenchmarkData = (apiData: any): Map<string, BenchmarkData> => {
   const benchmarkMap = new Map<string, BenchmarkData>()
   
@@ -73,11 +95,11 @@ export const processBenchmarkData = (apiData: any): Map<string, BenchmarkData> =
         benchmarkMap.set(key, {
           veiculo,
           tipoMidia,
-          cpm: parseNumber(row[2]), // Coluna CPM
-          cpc: parseNumber(row[3]), // Coluna CPC
-          ctr: parseNumber(row[7]), // Coluna CTR
-          vtr: parseNumber(row[8]), // Coluna VTR 100%
-          completionRate: parseNumber(row[8]), // Coluna COMPLETION RATE (mesmo que VTR)
+          cpm: parseNumber(row[2]),
+          cpc: parseNumber(row[3]),
+          ctr: parseNumber(row[7]),
+          vtr: parseNumber(row[8]),
+          completionRate: parseNumber(row[8]),
         })
       }
     })
@@ -86,7 +108,7 @@ export const processBenchmarkData = (apiData: any): Map<string, BenchmarkData> =
   return benchmarkMap
 }
 
-// Função para calcular variação
+// Função para calcular variação (existente - mantida por compatibilidade com outros componentes)
 export const calculateVariation = (
   currentValue: number,
   benchmarkValue: number,
@@ -100,10 +122,8 @@ export const calculateVariation = (
   let isBetter: boolean
   
   if (metricType === 'cost') {
-    // Para CPM e CPC: menor é melhor (diferença negativa é melhor)
     isBetter = difference < 0
   } else {
-    // Para CTR e VTR: maior é melhor (diferença positiva é melhor)
     isBetter = difference > 0
   }
   
@@ -114,90 +134,4 @@ export const calculateVariation = (
     value: `${sign}${formattedValue}`,
     color: isBetter ? "text-green-600" : "text-red-600"
   }
-}
-
-// Interface para dados do Flight 1
-export interface Flight1Data {
-  veiculo: string
-  praca: string
-  custo: number
-  impressoes: number
-  cliques: number
-}
-
-// Função para buscar dados do Flight 1
-export const fetchFlight1Data = async () => {
-  try {
-    const response = await apiNacional.get(
-      "/google/sheets/1tdFuCDyh1RDvhv9EGoZVJTBiHLSSOk-uUjp5rSbMUgg/data?range=Bench_ccbbf1",
-    )
-    return response.data
-  } catch (error) {
-    console.error("Erro ao buscar dados do Flight 1:", error)
-    throw error
-  }
-}
-
-// Hook para dados do Flight 1
-export const useFlight1Data = () => {
-  const [data, setData] = React.useState<Flight1Data[]>([])
-  const [loading, setLoading] = React.useState(true)
-  const [error, setError] = React.useState<Error | null>(null)
-
-  const loadData = React.useCallback(async () => {
-    try {
-      setLoading(true)
-      const result = await fetchFlight1Data()
-      const processed = processFlight1Data(result)
-      setData(processed)
-      setError(null)
-    } catch (err) {
-      setError(err as Error)
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  React.useEffect(() => {
-    loadData()
-  }, [loadData])
-
-  return { data, loading, error, refetch: loadData }
-}
-
-// Função para processar dados do Flight 1
-export const processFlight1Data = (apiData: any): Flight1Data[] => {
-  const flight1Data: Flight1Data[] = []
-  
-  if (apiData?.values) {
-    const rows = apiData.values.slice(1) // Pular header
-    
-    rows.forEach((row: any[]) => {
-      const parseNumber = (value: string | number) => {
-        if (!value || value === "") return 0
-        const stringValue = value.toString().trim()
-        // Remover R$, pontos de milhar, trocar vírgula por ponto
-        const cleanValue = stringValue.replace(/R\$\s*/g, "").replace(/\./g, "").replace(",", ".")
-        return Number.parseFloat(cleanValue) || 0
-      }
-      
-      const veiculo = (row[0] || "").toString().trim()
-      const praca = (row[1] || "").toString().trim()
-      const custo = parseNumber(row[2] || "0")
-      const impressoes = parseNumber(row[3] || "0")
-      const cliques = parseNumber(row[4] || "0")
-      
-      if (veiculo && praca) {
-        flight1Data.push({
-          veiculo,
-          praca,
-          custo,
-          impressoes,
-          cliques,
-        })
-      }
-    })
-  }
-  
-  return flight1Data
 }
