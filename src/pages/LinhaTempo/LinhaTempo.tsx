@@ -316,7 +316,7 @@ const LinhaTempo: React.FC = () => {
     if (filtered.length === 0 && selectedVehicles.length > 0) {
       console.warn(`⚠️ [DEBUG] ALERTA: Filtro de veículo ativo mas nenhuma linha encontrada! Verifique se "${selectedVehicles[0]}" está escrito igual na planilha.`)
       // Mostra o que tem disponível para ajudar a debuggar
-      console.log("Veículos disponíveis na base Flight 1:", [...new Set(flight1Data.map(d => d.veiculo))])
+      console.log("Veículos disponíveis na base Flight 1:", Array.from(new Set(flight1Data.map(d => d.veiculo))))
     }
 
     // 2. Somar Absolutos
