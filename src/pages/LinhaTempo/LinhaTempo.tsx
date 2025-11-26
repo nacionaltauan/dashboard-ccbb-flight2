@@ -89,27 +89,58 @@ const LinhaTempo: React.FC = () => {
     return new Date(Number.parseInt(year), Number.parseInt(month) - 1, Number.parseInt(day))
   }
 
-// Effect para carregar dados do Flight 1
+// Effect para carregar dados do Flight 1 (COM LOGS DE DEBUG)
   useEffect(() => {
     const loadFlight1 = async () => {
+      console.log("🚀 [DEBUG] Iniciando fetch do Flight 1...")
       try {
         const result = await fetchFlight1Data()
+        console.log("📦 [DEBUG] Dados brutos da API:", result)
+
         if (result?.values && Array.isArray(result.values)) {
-          // A planilha tem cabeçalhos na linha 1? O código abaixo assume que sim e remove (slice(1))
+          // Pega as primeiras linhas para inspeção
           const rows = result.values.slice(1)
           
-          const parsedData: Flight1Data[] = rows.map((row: any[]) => ({
-            veiculo: row[0] ? row[0].toString().trim() : "",
-            praca: row[1] ? row[1].toString().trim() : "Nacional",
-            custo: Number(row[2]?.toString().replace(/[R$\s.]/g, "").replace(",", ".") || 0),
-            impressoes: Number(row[3]?.toString().replace(/[.\s]/g, "") || 0),
-            cliques: Number(row[4]?.toString().replace(/[.\s]/g, "") || 0),
-          })).filter((item: Flight1Data) => item.veiculo !== "") // <--- CORREÇÃO AQUI
+          if (rows.length > 0) {
+             console.log("🧐 [DEBUG] Exemplo da primeira linha bruta:", rows[0])
+          }
+
+          const parsedData: Flight1Data[] = rows.map((row: any[], index: number) => {
+            // Limpeza de valores com logs para as 3 primeiras linhas
+            const rawCusto = row[2]?.toString() || "0"
+            const rawImpressoes = row[3]?.toString() || "0"
+            const rawCliques = row[4]?.toString() || "0"
+
+            // Remove R$, espaços, pontos de milhar e troca vírgula decimal por ponto
+            // Ex: "R$ 1.500,50" -> "1500.50"
+            const custoClean = Number(rawCusto.replace(/[R$\s.]/g, "").replace(",", ".") || 0)
+            const impressoesClean = Number(rawImpressoes.replace(/[.\s]/g, "") || 0)
+            const cliquesClean = Number(rawCliques.replace(/[.\s]/g, "") || 0)
+
+            if (index < 3) {
+              console.log(`📝 [DEBUG] Parse Linha ${index}:`, {
+                Veiculo: row[0],
+                CustoOriginal: rawCusto,
+                CustoFinal: custoClean
+              })
+            }
+
+            return {
+              veiculo: row[0] ? row[0].toString().trim() : "",
+              praca: row[1] ? row[1].toString().trim() : "Nacional",
+              custo: custoClean,
+              impressoes: impressoesClean,
+              cliques: cliquesClean,
+            }
+          }).filter((item: Flight1Data) => item.veiculo !== "")
           
+          console.log(`✅ [DEBUG] Total de linhas válidas carregadas: ${parsedData.length}`)
           setFlight1Data(parsedData)
+        } else {
+          console.warn("⚠️ [DEBUG] Estrutura de dados inválida ou vazia recebida")
         }
       } catch (err) {
-        console.error("Erro ao carregar Flight 1", err)
+        console.error("❌ [DEBUG] Erro fatal ao carregar Flight 1", err)
       }
     }
     loadFlight1()
@@ -252,24 +283,48 @@ const LinhaTempo: React.FC = () => {
     }
   }, [processedData, dateRange, selectedVehicles, selectedPracas])
 
-  // Lógica de Agregação do Flight 1 (Métrica Comparativa)
+ // Lógica de Agregação do Flight 1 (COM LOGS DE DEBUG)
   const flight1Metrics = useMemo(() => {
-    // 1. Filtrar (Ignora Data, respeita Veículo e Praça)
+    // Se não tiver dados, nem tenta calcular
+    if (flight1Data.length === 0) {
+       return { custo: 0, impressoes: 0, cliques: 0, cpc: 0, ctr: 0, cpm: 0 }
+    }
+
+    console.log(`🔍 [DEBUG] Calculando Métricas. Filtros:`, { 
+      Veiculos: selectedVehicles, 
+      Pracas: selectedPracas 
+    })
+
+    // 1. Filtrar
     const filtered = flight1Data.filter(item => {
-      // Normalização básica para evitar problemas de case/espaços
-      const itemVeiculo = item.veiculo
-      const itemPraca = item.praca
+      // Normalização forçada para comparação (tudo minúsculo)
+      const itemVeiculo = item.veiculo.toLowerCase()
+      const itemPraca = item.praca.toLowerCase()
       
-      const matchVehicle = selectedVehicles.length === 0 || selectedVehicles.some(v => v.toLowerCase() === itemVeiculo.toLowerCase())
-      const matchPraca = selectedPracas.length === 0 || selectedPracas.some(p => p.toLowerCase() === itemPraca.toLowerCase())
+      // Verifica Veículo
+      const matchVehicle = selectedVehicles.length === 0 || 
+        selectedVehicles.some(v => v.toLowerCase() === itemVeiculo)
+
+      // Verifica Praça
+      const matchPraca = selectedPracas.length === 0 || 
+        selectedPracas.some(p => p.toLowerCase() === itemPraca)
       
       return matchVehicle && matchPraca
     })
+
+    console.log(`📊 [DEBUG] Linhas restantes após filtro: ${filtered.length}`)
+    if (filtered.length === 0 && selectedVehicles.length > 0) {
+      console.warn(`⚠️ [DEBUG] ALERTA: Filtro de veículo ativo mas nenhuma linha encontrada! Verifique se "${selectedVehicles[0]}" está escrito igual na planilha.`)
+      // Mostra o que tem disponível para ajudar a debuggar
+      console.log("Veículos disponíveis na base Flight 1:", [...new Set(flight1Data.map(d => d.veiculo))])
+    }
 
     // 2. Somar Absolutos
     const totalCusto = filtered.reduce((acc, item) => acc + item.custo, 0)
     const totalImpressoes = filtered.reduce((acc, item) => acc + item.impressoes, 0)
     const totalCliques = filtered.reduce((acc, item) => acc + item.cliques, 0)
+
+    console.log("💰 [DEBUG] Totais Calculados:", { totalCusto, totalImpressoes, totalCliques })
 
     // 3. Calcular Taxas
     return {
