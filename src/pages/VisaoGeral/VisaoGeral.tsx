@@ -5,6 +5,7 @@ import { useState, useEffect, useMemo, useRef } from "react"
 import { BarChart3, Calendar, Filter, MapPin } from "lucide-react"
 import { useConsolidadoNacionalData } from "../../services/api"
 import { useBenchmarkNacionalData, processBenchmarkData } from "../../services/benchmarkApi"
+import { useAlcanceMetrics, useAlcanceDedupData } from "../../services/alcanceApi"
 import PDFDownloadButton from "../../components/PDFDownloadButton/PDFDownloadButton"
 import Loading from "../../components/Loading/Loading"
 
@@ -60,6 +61,10 @@ const VisaoGeral: React.FC = () => {
   const [dateRange, setDateRange] = useState<{ start: string; end: string }>({ start: "", end: "" })
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([])
   const [selectedPracas, setSelectedPracas] = useState<string[]>([])
+
+  // Buscar métricas de alcance deduplicado
+  const alcanceMetrics = useAlcanceMetrics(selectedPracas, selectedPlatforms)
+  const { data: alcanceDedupData } = useAlcanceDedupData()
 
   // Cores para as plataformas
   const platformColors: Record<string, string> = {
@@ -298,46 +303,106 @@ const VisaoGeral: React.FC = () => {
   // Calcular métricas por plataforma
   const platformMetrics = useMemo(() => {
     const metrics: Record<string, PlatformMetrics> = {}
+    const alcancePlatforms = ["TikTok", "Meta", "Uber"]
 
-    filteredData.forEach((item) => {
-      if (!metrics[item.platform]) {
-        metrics[item.platform] = {
-          platform: item.platform,
-          impressions: 0,
-          cost: 0,
-          reach: 0,
-          clicks: 0,
-          cpm: 0,
-          frequency: 0,
-          color: platformColors[item.platform] || platformColors.Default,
+    // Processar dados de alcance deduplicado para TikTok, Meta e Uber
+    if (alcanceDedupData && alcanceDedupData.length > 0) {
+      alcanceDedupData.forEach((item) => {
+        // Aplicar filtros
+        const matchPraca =
+          selectedPracas.length === 0 || selectedPracas.some((p) => p.toLowerCase() === item.praca.toLowerCase())
+        const matchPlatform =
+          selectedPlatforms.length === 0 ||
+          selectedPlatforms.some((p) => p.toLowerCase() === item.platform.toLowerCase())
+
+        if (matchPraca && matchPlatform) {
+          if (!metrics[item.platform]) {
+            metrics[item.platform] = {
+              platform: item.platform,
+              impressions: 0,
+              cost: 0,
+              reach: 0,
+              clicks: 0,
+              cpm: 0,
+              frequency: 0,
+              color: platformColors[item.platform] || platformColors.Default,
+            }
+          }
+
+          metrics[item.platform].impressions += item.impressions
+          metrics[item.platform].reach += item.reach
         }
-      }
+      })
+    }
 
-      metrics[item.platform].impressions += item.impressions
-      metrics[item.platform].cost += item.cost
-      metrics[item.platform].reach += item.reach
-      metrics[item.platform].clicks += item.clicks
+    // Processar dados da API consolidada para outras plataformas
+    filteredData.forEach((item) => {
+      const isAlcancePlatform = alcancePlatforms.some((p) => item.platform.toLowerCase() === p.toLowerCase())
+
+      // Pular plataformas que já foram processadas com dados de alcance deduplicado
+      if (isAlcancePlatform) {
+        // Se já existe métrica dessa plataforma, adicionar apenas cost e clicks da API consolidada
+        if (metrics[item.platform]) {
+          metrics[item.platform].cost += item.cost
+          metrics[item.platform].clicks += item.clicks
+        }
+      } else {
+        // Para outras plataformas, usar dados completos da API consolidada
+        if (!metrics[item.platform]) {
+          metrics[item.platform] = {
+            platform: item.platform,
+            impressions: 0,
+            cost: 0,
+            reach: 0,
+            clicks: 0,
+            cpm: 0,
+            frequency: 0,
+            color: platformColors[item.platform] || platformColors.Default,
+          }
+        }
+
+        metrics[item.platform].impressions += item.impressions
+        metrics[item.platform].cost += item.cost
+        metrics[item.platform].reach += item.reach
+        metrics[item.platform].clicks += item.clicks
+      }
     })
 
     // Calcular médias
     Object.values(metrics).forEach((metric) => {
       const platformData = filteredData.filter((item) => item.platform === metric.platform)
-      if (platformData.length > 0) {
-        metric.cpm = metric.cost / (metric.impressions / 1000)
+      if (platformData.length > 0 || alcanceDedupData?.some((item) => item.platform === metric.platform)) {
+        metric.cpm = metric.impressions > 0 ? metric.cost / (metric.impressions / 1000) : 0
         metric.frequency = metric.reach > 0 ? metric.impressions / metric.reach : 0
       }
     })
 
     return Object.values(metrics).sort((a, b) => b.impressions - a.impressions)
-  }, [filteredData])
+  }, [filteredData, alcanceDedupData, selectedPracas, selectedPlatforms, platformColors])
 
   // Calcular totais
   const totals = useMemo(() => {
     const investment = filteredData.reduce((sum, item) => sum + item.cost, 0)
-    const impressions = filteredData.reduce((sum, item) => sum + item.impressions, 0)
-    const reach = filteredData.reduce((sum, item) => sum + item.reach, 0)
     const clicks = filteredData.reduce((sum, item) => sum + item.clicks, 0)
-    const frequency = reach > 0 ? impressions / reach : 0
+
+    // Usar dados de alcance deduplicado para TikTok, Meta e Uber
+    // Para outras plataformas, usar dados da API consolidada
+    const alcancePlatforms = ["TikTok", "Meta", "Uber"]
+    const filteredDataOtherPlatforms = filteredData.filter(
+      (item) => !alcancePlatforms.some((p) => item.platform.toLowerCase() === p.toLowerCase()),
+    )
+    const reachFromOtherPlatforms = filteredDataOtherPlatforms.reduce((sum, item) => sum + item.reach, 0)
+    const impressionsFromOtherPlatforms = filteredDataOtherPlatforms.reduce((sum, item) => sum + item.impressions, 0)
+
+    // Total de alcance = alcance das novas abas + alcance de outras plataformas
+    const reach = alcanceMetrics.totalReach + reachFromOtherPlatforms
+
+    // Total de impressões = impressões das novas abas + impressões de outras plataformas
+    const impressions = alcanceMetrics.totalImpressions + impressionsFromOtherPlatforms
+
+    // Frequência média = totalImpressions / totalReach
+    const frequency = reach > 0 ? impressions / reach : alcanceMetrics.avgFrequency
+
     const cpm = impressions > 0 ? investment / (impressions / 1000) : 0
     const cpc = clicks > 0 ? investment / clicks : 0
     const ctr = impressions > 0 ? (clicks / impressions) * 100 : 0
@@ -358,7 +423,7 @@ const VisaoGeral: React.FC = () => {
       cpv,
       vtr,
     }
-  }, [filteredData])
+  }, [filteredData, alcanceMetrics])
 
   // Preparar dados para gráficos
   const impressionsChartData: ChartDataPoint[] = platformMetrics.map((metric) => ({
