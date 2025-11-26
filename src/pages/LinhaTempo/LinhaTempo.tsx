@@ -89,7 +89,7 @@ const LinhaTempo: React.FC = () => {
     return new Date(Number.parseInt(year), Number.parseInt(month) - 1, Number.parseInt(day))
   }
 
-// Effect para carregar dados do Flight 1 (COM LOGS DE DEBUG)
+// Effect para carregar dados do Flight 1 (CORRIGIDO PARA ESTRUTURA ANINHADA)
   useEffect(() => {
     const loadFlight1 = async () => {
       console.log("🚀 [DEBUG] Iniciando fetch do Flight 1...")
@@ -97,22 +97,23 @@ const LinhaTempo: React.FC = () => {
         const result = await fetchFlight1Data()
         console.log("📦 [DEBUG] Dados brutos da API:", result)
 
-        if (result?.values && Array.isArray(result.values)) {
-          // Pega as primeiras linhas para inspeção
-          const rows = result.values.slice(1)
+        // CORREÇÃO: A API retorna { success: true, data: { values: [...] } }
+        // Precisamos acessar result.data.values
+        const rowsRaw = result?.data?.values || result?.values
+
+        if (rowsRaw && Array.isArray(rowsRaw)) {
+          // Pega as primeiras linhas para inspeção (slice(1) remove cabeçalho)
+          const rows = rowsRaw.slice(1)
           
           if (rows.length > 0) {
              console.log("🧐 [DEBUG] Exemplo da primeira linha bruta:", rows[0])
           }
 
           const parsedData: Flight1Data[] = rows.map((row: any[], index: number) => {
-            // Limpeza de valores com logs para as 3 primeiras linhas
             const rawCusto = row[2]?.toString() || "0"
             const rawImpressoes = row[3]?.toString() || "0"
             const rawCliques = row[4]?.toString() || "0"
 
-            // Remove R$, espaços, pontos de milhar e troca vírgula decimal por ponto
-            // Ex: "R$ 1.500,50" -> "1500.50"
             const custoClean = Number(rawCusto.replace(/[R$\s.]/g, "").replace(",", ".") || 0)
             const impressoesClean = Number(rawImpressoes.replace(/[.\s]/g, "") || 0)
             const cliquesClean = Number(rawCliques.replace(/[.\s]/g, "") || 0)
@@ -137,7 +138,7 @@ const LinhaTempo: React.FC = () => {
           console.log(`✅ [DEBUG] Total de linhas válidas carregadas: ${parsedData.length}`)
           setFlight1Data(parsedData)
         } else {
-          console.warn("⚠️ [DEBUG] Estrutura de dados inválida ou vazia recebida")
+          console.warn("⚠️ [DEBUG] Estrutura de dados inválida ou vazia recebida. Verifique result.data.values")
         }
       } catch (err) {
         console.error("❌ [DEBUG] Erro fatal ao carregar Flight 1", err)
