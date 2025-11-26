@@ -484,44 +484,52 @@ const LinhaTempo: React.FC = () => {
     }
   }, [processedData])
 
-  // Função auxiliar para renderizar comparativo
+// Função auxiliar para renderizar comparativo
   const renderComparison = (
     currentValue: number, 
     refValue: number, 
-    type: 'volume' | 'taxa' | 'custo',
+    type: 'volume' | 'taxa' | 'custo' | 'investment', // <--- Adicionado 'investment' aqui
     formatFn: (v: number) => string
   ) => {
     if (refValue === 0) return <span className="text-xs text-gray-400 mt-1">Sem histórico</span>
 
     let diff: number
     let percentDiff: number
-    let isPositiveBad = false // Flag para métricas onde aumento é ruim (Custo)
+    let isPositiveBad = false 
     let label = ""
+    let customColor = "" // Variável para cor personalizada
 
     if (type === 'volume') {
-      // Variação Percentual ((Atual / Ref) - 1)
+      // Variação Percentual
       diff = currentValue - refValue
       percentDiff = ((currentValue / refValue) - 1) * 100
       label = `${percentDiff > 0 ? "+" : ""}${percentDiff.toFixed(1)}%`
-      isPositiveBad = false // Mais impressões/cliques é bom (Verde)
+      isPositiveBad = false
     } else if (type === 'taxa') {
-      // Diferença em pontos percentuais (Atual - Ref)
+      // Diferença em pontos percentuais
       diff = currentValue - refValue
       label = `${diff > 0 ? "+" : ""}${diff.toFixed(2)} p.p.`
-      isPositiveBad = false // Maior CTR é bom (Verde)
+      isPositiveBad = false
+    } else if (type === 'investment') {
+       // --- NOVA LÓGICA PARA INVESTIMENTO (NEUTRO) ---
+       diff = currentValue - refValue
+       label = `${diff > 0 ? "+" : ""}${formatCurrency(diff)}`
+       customColor = "text-blue-600" // Força a cor Azul Neutro
     } else {
-      // Custo (Atual - Ref) em Reais
+      // Custo (CPC, CPM) - Vermelho/Verde mantido
       diff = currentValue - refValue
       label = `${diff > 0 ? "+" : ""}${formatCurrency(diff)}`
-      isPositiveBad = true // Custo maior é ruim (Vermelho)
+      isPositiveBad = true 
     }
 
-    // Lógica de Cores:
-    // Se type='custo' e diff > 0 (mais caro) -> Ruim (Vermelho)
-    // Se type='custo' e diff < 0 (mais barato) -> Bom (Verde)
-    // Se type!='custo' e diff > 0 (mais volume) -> Bom (Verde)
-    const isGood = isPositiveBad ? diff < 0 : diff > 0
-    const colorClass = isGood ? "text-green-600" : "text-red-600"
+    // Define a classe de cor
+    let colorClass = ""
+    if (customColor) {
+        colorClass = customColor
+    } else {
+        const isGood = isPositiveBad ? diff < 0 : diff > 0
+        colorClass = isGood ? "text-green-600" : "text-red-600"
+    }
 
     return (
       <div className="flex flex-col items-start mt-1">
@@ -676,7 +684,7 @@ const LinhaTempo: React.FC = () => {
             <div className="ml-3">
               <p className="text-sm font-medium text-gray-600">Investimento Total</p>
               <p className="text-xl font-bold text-gray-900">{formatCurrency(totalInvestment)}</p>
-              {renderComparison(totalInvestment, flight1Metrics.custo, 'custo', formatCurrency)}
+              {renderComparison(totalInvestment, flight1Metrics.custo, 'investment', formatCurrency)}
             </div>
           </div>
         </div>
