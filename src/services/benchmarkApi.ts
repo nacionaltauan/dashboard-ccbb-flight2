@@ -47,6 +47,77 @@ export const fetchFlight1Data = async () => {
   }
 }
 
+// Função para processar dados do Flight 1
+export const processFlight1Data = (apiData: any): Flight1Data[] => {
+  const flight1Data: Flight1Data[] = []
+  
+  if (apiData?.data?.values || apiData?.values) {
+    const rowsRaw = apiData?.data?.values || apiData?.values
+    const rows = rowsRaw.slice(1) // Pular header
+    
+    rows.forEach((row: any[]) => {
+      const parseNumber = (value: string | number) => {
+        if (!value || value === "") return 0
+        const stringValue = value.toString().trim()
+        const cleanValue = stringValue.replace(/R\$\s*/g, "").replace(/\./g, "").replace(",", ".")
+        return Number.parseFloat(cleanValue) || 0
+      }
+
+      const parseInteger = (value: string | number) => {
+        if (!value || value === "") return 0
+        const stringValue = value.toString().trim()
+        const cleanValue = stringValue.replace(/\./g, "")
+        return Number.parseInt(cleanValue) || 0
+      }
+
+      const veiculo = (row[0] || "").toString().trim()
+      const praca = (row[1] || "").toString().trim()
+      const custo = parseNumber(row[2] || "0")
+      const impressoes = parseInteger(row[3] || "0")
+      const cliques = parseInteger(row[4] || "0")
+
+      if (veiculo) {
+        flight1Data.push({
+          veiculo,
+          praca: praca || "Nacional",
+          custo,
+          impressoes,
+          cliques,
+        })
+      }
+    })
+  }
+  
+  return flight1Data
+}
+
+// Hook para dados do Flight 1
+export const useFlight1Data = () => {
+  const [data, setData] = React.useState<Flight1Data[]>([])
+  const [loading, setLoading] = React.useState(true)
+  const [error, setError] = React.useState<Error | null>(null)
+
+  const loadData = React.useCallback(async () => {
+    try {
+      setLoading(true)
+      const result = await fetchFlight1Data()
+      const processed = processFlight1Data(result)
+      setData(processed)
+      setError(null)
+    } catch (err) {
+      setError(err as Error)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  React.useEffect(() => {
+    loadData()
+  }, [loadData])
+
+  return { data, loading, error, refetch: loadData }
+}
+
 // Hook para dados de benchmark (existente)
 export const useBenchmarkNacionalData = () => {
   const [data, setData] = React.useState<any>(null)

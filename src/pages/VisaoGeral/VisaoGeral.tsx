@@ -4,7 +4,7 @@ import type React from "react"
 import { useState, useEffect, useMemo, useRef } from "react"
 import { BarChart3, Calendar, Filter, MapPin } from "lucide-react"
 import { useConsolidadoNacionalData } from "../../services/api"
-import { useBenchmarkNacionalData, processBenchmarkData } from "../../services/benchmarkApi"
+import { useFlight1Data, type Flight1Data } from "../../services/benchmarkApi"
 import { useAlcanceMetrics, useAlcanceDedupData } from "../../services/alcanceApi"
 import PDFDownloadButton from "../../components/PDFDownloadButton/PDFDownloadButton"
 import Loading from "../../components/Loading/Loading"
@@ -53,10 +53,21 @@ interface ChartDataPoint {
   color: string
 }
 
+// Interface para métricas de benchmark por veículo
+interface VehicleBenchmarkMetrics {
+  veiculo: string
+  custo: number
+  impressoes: number
+  cliques: number
+  cpc: number
+  ctr: number
+  cpm: number
+}
+
 const VisaoGeral: React.FC = () => {
   const contentRef = useRef<HTMLDivElement>(null)
   const { data: apiData, loading, error } = useConsolidadoNacionalData()
-  const { data: benchmarkData } = useBenchmarkNacionalData()
+  const { data: flight1Data, loading: flight1Loading } = useFlight1Data()
   const [processedData, setProcessedData] = useState<ProcessedData[]>([])
   const [dateRange, setDateRange] = useState<{ start: string; end: string }>({ start: "", end: "" })
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([])
@@ -96,13 +107,61 @@ const VisaoGeral: React.FC = () => {
     return Array.from(pracas)
   }, [processedData])
 
-  // Processar dados de benchmark
-  const benchmarkMap = useMemo(() => {
-    if (benchmarkData?.data) {
-      return processBenchmarkData(benchmarkData.data)
+  // Processar dados do Flight 1 para benchmark por veículo
+  const vehicleBenchmarks = useMemo(() => {
+    if (!flight1Data || flight1Data.length === 0) {
+      return []
     }
-    return new Map()
-  }, [benchmarkData])
+
+    // Filtrar por praça (respeitar filtro de praça)
+    let filtered = flight1Data
+    if (selectedPracas.length > 0) {
+      filtered = flight1Data.filter((item) =>
+        selectedPracas.some((p) => p.toLowerCase() === item.praca.toLowerCase())
+      )
+    }
+
+    // Agrupar por veículo e somar valores
+    const groupedByVehicle = filtered.reduce((acc, item) => {
+      const veiculo = item.veiculo.trim()
+      if (!veiculo) return acc
+
+      if (!acc[veiculo]) {
+        acc[veiculo] = {
+          veiculo,
+          custo: 0,
+          impressoes: 0,
+          cliques: 0,
+        }
+      }
+
+      acc[veiculo].custo += item.custo
+      acc[veiculo].impressoes += item.impressoes
+      acc[veiculo].cliques += item.cliques
+
+      return acc
+    }, {} as Record<string, { veiculo: string; custo: number; impressoes: number; cliques: number }>)
+
+    // Calcular métricas por veículo
+    const benchmarks: VehicleBenchmarkMetrics[] = Object.values(groupedByVehicle).map((vehicle) => {
+      const cpc = vehicle.cliques > 0 ? vehicle.custo / vehicle.cliques : 0
+      const ctr = vehicle.impressoes > 0 ? (vehicle.cliques / vehicle.impressoes) * 100 : 0
+      const cpm = vehicle.impressoes > 0 ? (vehicle.custo / vehicle.impressoes) * 1000 : 0
+
+      return {
+        veiculo: vehicle.veiculo,
+        custo: vehicle.custo,
+        impressoes: vehicle.impressoes,
+        cliques: vehicle.cliques,
+        cpc,
+        ctr,
+        cpm,
+      }
+    })
+
+    // Ordenar por veículo
+    return benchmarks.sort((a, b) => a.veiculo.localeCompare(b.veiculo))
+  }, [flight1Data, selectedPracas])
 
   const togglePlatform = (platform: string) => {
     setSelectedPlatforms((prev) => {
@@ -235,70 +294,6 @@ const VisaoGeral: React.FC = () => {
     }
   }, [processedData, dateRange, selectedPlatforms, selectedPracas])
 
-  // Identificar veículos disponíveis nos dados filtrados
-  const availableVehicles = useMemo(() => {
-    const vehicles = new Set<string>()
-    filteredData.forEach((item) => {
-      vehicles.add(item.platform)
-    })
-    return Array.from(vehicles)
-  }, [filteredData])
-
-  // Obter benchmarks para veículos disponíveis
-  const vehicleBenchmarks = useMemo(() => {
-    const benchmarks: Array<{
-      vehicle: string
-      mediaType: string
-      cpm: number
-      cpc: number
-      ctr: number
-      vtr: number
-    }> = []
-
-    availableVehicles.forEach((vehicle) => {
-      // Mapear veículo para chave do benchmark
-      let benchmarkKey = ""
-      if (vehicle === "Meta") {
-        benchmarkKey = "META"
-      } else if (vehicle === "TikTok") {
-        benchmarkKey = "TIK TOK"
-      } else {
-        // Para outros veículos, usar o nome como está
-        benchmarkKey = vehicle.toUpperCase()
-      }
-
-      // Buscar benchmarks para DISPLAY e VÍDEO
-      const displayKey = `${benchmarkKey}_DISPLAY`
-      const videoKey = `${benchmarkKey}_VÍDEO`
-
-      const displayBenchmark = benchmarkMap.get(displayKey)
-      const videoBenchmark = benchmarkMap.get(videoKey)
-
-      if (displayBenchmark) {
-        benchmarks.push({
-          vehicle,
-          mediaType: "DISPLAY",
-          cpm: displayBenchmark.cpm || 0,
-          cpc: displayBenchmark.cpc || 0,
-          ctr: displayBenchmark.ctr || 0,
-          vtr: displayBenchmark.completionRate || 0,
-        })
-      }
-
-      if (videoBenchmark) {
-        benchmarks.push({
-          vehicle,
-          mediaType: "VÍDEO",
-          cpm: videoBenchmark.cpm || 0,
-          cpc: videoBenchmark.cpc || 0,
-          ctr: videoBenchmark.ctr || 0,
-          vtr: videoBenchmark.completionRate || 0,
-        })
-      }
-    })
-
-    return benchmarks
-  }, [availableVehicles, benchmarkMap])
 
   // Calcular métricas por plataforma
   const platformMetrics = useMemo(() => {
@@ -309,28 +304,29 @@ const VisaoGeral: React.FC = () => {
     if (alcanceDedupData && alcanceDedupData.length > 0) {
       alcanceDedupData.forEach((item) => {
         // Aplicar filtros
+        const veiculo = item.veiculo || item.platform || ""
         const matchPraca =
           selectedPracas.length === 0 || selectedPracas.some((p) => p.toLowerCase() === item.praca.toLowerCase())
         const matchPlatform =
           selectedPlatforms.length === 0 ||
-          selectedPlatforms.some((p) => p.toLowerCase() === item.platform.toLowerCase())
+          selectedPlatforms.some((p) => p.toLowerCase() === veiculo.toLowerCase())
 
         if (matchPraca && matchPlatform) {
-          if (!metrics[item.platform]) {
-            metrics[item.platform] = {
-              platform: item.platform,
+          if (!metrics[veiculo]) {
+            metrics[veiculo] = {
+              platform: veiculo,
               impressions: 0,
               cost: 0,
               reach: 0,
               clicks: 0,
               cpm: 0,
               frequency: 0,
-              color: platformColors[item.platform] || platformColors.Default,
+              color: platformColors[veiculo] || platformColors.Default,
             }
           }
 
-          metrics[item.platform].impressions += item.impressions
-          metrics[item.platform].reach += item.reach
+          metrics[veiculo].impressions += item.impressoes
+          metrics[veiculo].reach += item.alcance
         }
       })
     }
@@ -371,7 +367,8 @@ const VisaoGeral: React.FC = () => {
     // Calcular médias
     Object.values(metrics).forEach((metric) => {
       const platformData = filteredData.filter((item) => item.platform === metric.platform)
-      if (platformData.length > 0 || alcanceDedupData?.some((item) => item.platform === metric.platform)) {
+      const veiculo = metric.platform
+      if (platformData.length > 0 || alcanceDedupData?.some((item) => (item.veiculo || item.platform) === veiculo)) {
         metric.cpm = metric.impressions > 0 ? metric.cost / (metric.impressions / 1000) : 0
         metric.frequency = metric.reach > 0 ? metric.impressions / metric.reach : 0
       }
@@ -518,68 +515,55 @@ const VisaoGeral: React.FC = () => {
     )
   }
 
-  // Componente do card de benchmarks
+  // Componente do card de benchmarks (Flight 1)
   const BenchmarkCard: React.FC = () => {
+    if (flight1Loading) {
+      return (
+        <div className="card-overlay rounded-lg shadow-lg p-4 text-center min-h-[100px] flex flex-col justify-center">
+          <div className="text-sm text-gray-600 mb-1">Benchmarks (Flight 1)</div>
+          <div className="text-lg font-bold text-gray-500">Carregando...</div>
+        </div>
+      )
+    }
+
     if (vehicleBenchmarks.length === 0) {
       return (
         <div className="card-overlay rounded-lg shadow-lg p-4 text-center min-h-[100px] flex flex-col justify-center">
-          <div className="text-sm text-gray-600 mb-1">Benchmarks</div>
+          <div className="text-sm text-gray-600 mb-1">Benchmarks (Flight 1)</div>
           <div className="text-lg font-bold text-gray-500">Nenhum benchmark disponível</div>
         </div>
       )
     }
 
-    // Agrupar por veículo
-    const groupedBenchmarks = vehicleBenchmarks.reduce((acc, benchmark) => {
-      if (!acc[benchmark.vehicle]) {
-        acc[benchmark.vehicle] = []
-      }
-      acc[benchmark.vehicle].push(benchmark)
-      return acc
-    }, {} as Record<string, typeof vehicleBenchmarks>)
-
     return (
       <div className="card-overlay rounded-lg shadow-lg p-6">
-        <div className="text-lg font-semibold text-gray-800 mb-4">Benchmarks de Mercado</div>
+        <div className="text-lg font-semibold text-gray-800 mb-4">Benchmarks - Flight 1</div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {Object.entries(groupedBenchmarks).map(([vehicle, benchmarks]) => (
-            <div key={vehicle} className="bg-gray-50 rounded-lg p-4 space-y-3">
+          {vehicleBenchmarks.map((benchmark) => (
+            <div key={benchmark.veiculo} className="bg-gray-50 rounded-lg p-4 space-y-3">
               <div className="text-sm font-bold text-gray-800 text-center border-b border-gray-300 pb-2">
-                {vehicle}
+                {benchmark.veiculo}
               </div>
-              {benchmarks.map((benchmark, index) => (
-                <div key={index} className="space-y-2">
-                  <div className="text-xs font-medium text-gray-600 text-center">
-                    {benchmark.mediaType}
-                  </div>
-                  <div className="grid grid-cols-2 gap-3 text-xs">
-                    <div className="text-center bg-white rounded p-2">
-                      <div className="text-gray-500 text-xs">CPM</div>
-                      <div className="font-semibold text-blue-600 text-sm">
-                        {formatCurrency(benchmark.cpm || 0)}
-                      </div>
-                    </div>
-                    <div className="text-center bg-white rounded p-2">
-                      <div className="text-gray-500 text-xs">CPC</div>
-                      <div className="font-semibold text-green-600 text-sm">
-                        {formatCurrency(benchmark.cpc || 0)}
-                      </div>
-                    </div>
-                    <div className="text-center bg-white rounded p-2">
-                      <div className="text-gray-500 text-xs">CTR</div>
-                      <div className="font-semibold text-purple-600 text-sm">
-                        {(benchmark.ctr || 0).toFixed(2)}%
-                      </div>
-                    </div>
-                    <div className="text-center bg-white rounded p-2">
-                      <div className="text-gray-500 text-xs">VTR</div>
-                      <div className="font-semibold text-orange-600 text-sm">
-                        {(benchmark.vtr || 0).toFixed(2)}%
-                      </div>
-                    </div>
+              <div className="grid grid-cols-2 gap-3 text-xs">
+                <div className="text-center bg-white rounded p-2">
+                  <div className="text-gray-500 text-xs">CPC</div>
+                  <div className="font-semibold text-gray-800 text-sm">
+                    {formatCurrency(benchmark.cpc)}
                   </div>
                 </div>
-              ))}
+                <div className="text-center bg-white rounded p-2">
+                  <div className="text-gray-500 text-xs">CTR</div>
+                  <div className="font-semibold text-gray-800 text-sm">
+                    {benchmark.ctr.toFixed(2)}%
+                  </div>
+                </div>
+                <div className="text-center bg-white rounded p-2 col-span-2">
+                  <div className="text-gray-500 text-xs">CPM</div>
+                  <div className="font-semibold text-gray-800 text-sm">
+                    {formatCurrency(benchmark.cpm)}
+                  </div>
+                </div>
+              </div>
             </div>
           ))}
         </div>

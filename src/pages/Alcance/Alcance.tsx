@@ -257,16 +257,17 @@ const Alcance: React.FC = () => {
     if (alcanceDedupData && alcanceDedupData.length > 0) {
       alcanceDedupData.forEach((item) => {
         // Aplicar filtros
+        const veiculo = item.veiculo || item.platform || ""
         const matchPraca =
           selectedPracas.length === 0 || selectedPracas.some((p) => p.toLowerCase() === item.praca.toLowerCase())
         const matchPlatform =
           selectedPlatforms.length === 0 ||
-          selectedPlatforms.some((p) => p.toLowerCase() === item.platform.toLowerCase())
+          selectedPlatforms.some((p) => p.toLowerCase() === veiculo.toLowerCase())
 
         if (matchPraca && matchPlatform) {
-          if (!metrics[item.platform]) {
-            metrics[item.platform] = {
-              platform: item.platform,
+          if (!metrics[veiculo]) {
+            metrics[veiculo] = {
+              platform: veiculo,
               impressions: 0,
               cost: 0,
               reach: 0,
@@ -277,13 +278,13 @@ const Alcance: React.FC = () => {
               visualizacoes100: 0,
               cpv: 0,
               vtr100: 0,
-              color: platformColors[item.platform] || platformColors.Default,
+              color: platformColors[veiculo] || platformColors.Default,
               percentage: 0,
             }
           }
 
-          metrics[item.platform].impressions += item.impressions
-          metrics[item.platform].reach += item.reach
+          metrics[veiculo].impressions += item.impressoes
+          metrics[veiculo].reach += item.alcance
         }
       })
     }
@@ -335,7 +336,8 @@ const Alcance: React.FC = () => {
 
     Object.values(metrics).forEach((metric) => {
       const platformData = filteredData.filter((item) => item.platform === metric.platform)
-      if (platformData.length > 0 || alcanceDedupData?.some((item) => item.platform === metric.platform)) {
+      const veiculo = metric.platform
+      if (platformData.length > 0 || alcanceDedupData?.some((item) => (item.veiculo || item.platform) === veiculo)) {
         metric.cpm = metric.impressions > 0 ? metric.cost / (metric.impressions / 1000) : 0
         metric.frequency = metric.reach > 0 ? metric.impressions / metric.reach : 0
         metric.cpv = metric.visualizacoes100 > 0 ? metric.cost / metric.visualizacoes100 : 0
