@@ -177,4 +177,3 @@ export const useAlcanceMetrics = (selectedPracas: string[] = [], selectedPlatfor
     error,
   }
 }
-```Compiling...
