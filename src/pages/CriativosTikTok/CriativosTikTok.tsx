@@ -207,6 +207,11 @@ const CriativosTikTok: React.FC = () => {
       return "Salvador"
     }
     
+        // Regras para Brasília
+    if (upperAdName.includes("BSB")) {
+      return "Brasília"
+    }
+
     return null
   }
 

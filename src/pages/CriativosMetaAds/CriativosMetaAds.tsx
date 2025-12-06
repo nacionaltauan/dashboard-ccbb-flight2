@@ -454,7 +454,12 @@ const CriativosMeta: FC = () => {
     if (upperCreative.includes("SSA")) {
       return "Salvador"
     }
-    
+
+        // Regras para Brasília
+    if (upperCreative.includes("BSB")) {
+      return "Brasília"
+    }
+
     return null
   }
 
