@@ -383,6 +383,8 @@ const TrafegoEngajamento: React.FC<TrafegoEngajamentoProps> = () => {
     const dateIndex = getColumnIndex(headers, "Date")
     const eventTypeIndex = getColumnIndex(headers, "Parâmetro Ação") // Coluna D
     const eventCountIndex = getColumnIndex(headers, "Event count") // Coluna G
+    const eventLabelIndex = getColumnIndex(headers, "Parâmetro Rótulo") // Mapeando Parâmetro Rótulo
+    const pracaIndex = getColumnIndex(headers, "Praça") // Mapeando Praça
 
     if (dateIndex === -1 || eventTypeIndex === -1 || eventCountIndex === -1) {
       return {
@@ -410,10 +412,29 @@ const TrafegoEngajamento: React.FC<TrafegoEngajamentoProps> = () => {
 
       const eventType = row[eventTypeIndex] || ""
       const eventCount = parseInt(row[eventCountIndex]) || 0
+      const praca = row[pracaIndex]?.toString().trim() || ""
+      const eventLabel = row[eventLabelIndex]?.toString().trim() || ""
 
-      // Lógica: IF Coluna C = "botao-cta", THEN somar coluna F
-      if (eventType === "botao-cta") {
-        bbTrackTotal += eventCount
+      // Lógica condicional por Praça para contabilizar bbTrackTotal (Adquirir ingressos)
+      // Normalização básica para evitar erros de espaço
+      const currentPraca = praca.trim();
+      const currentLabel = eventLabel.trim();
+
+      if (currentPraca === "Brasília") {
+        // Se Brasília: Soma se Parâmetro Rótulo for "MEME: no Br@sil da memeficação - Ingressos"
+        if (currentLabel === "MEME: no Br@sil da memeficação - Ingressos") {
+          bbTrackTotal += eventCount;
+        }
+      } else if (currentPraca === "Salvador") {
+        // Se Salvador: Soma se Parâmetro Rótulo for "Ancestral: Afro-Américas - Ingressos"
+        if (currentLabel === "Ancestral: Afro-Américas - Ingressos") {
+          bbTrackTotal += eventCount;
+        }
+      } else {
+        // Default (Outras praças): Soma se Parâmetro Ação for "botao-cta"
+        if (eventType === "botao-cta") {
+          bbTrackTotal += eventCount;
+        }
       }
     })
 
